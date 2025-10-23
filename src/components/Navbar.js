@@ -1,16 +1,18 @@
 import { Link } from "react-router-dom";
 import Tema from "./Tema";
+import logo from "../assets/logo.png";
 
 function Navbar() {
   return (
-    <nav className="navbar navbar-expand-lg bg-body-tertiary bg-dark border-bottom border-body">
+    <nav className="navbar navbar-expand-lg bg-body-tertiary border-bottom border-body">
       <div className="container-fluid">
         {/* Marca / logo */}
-        <Link className="navbar-brand text-white" to="/">
-          Navbar
+        <Link className="navbar-brand" to="/">
+          <img src={logo} alt="Logo" width="60" height="60" />
+          Gamershop
         </Link>
 
-        {/* Botón colapsable para pantallas pequeñas */}
+        {/* Botón colapsable */}
         <button
           className="navbar-toggler"
           type="button"
@@ -30,19 +32,19 @@ function Navbar() {
         >
           <ul className="navbar-nav">
             <li className="nav-item">
-              <Link className="nav-link text-white" to="/">
+              <Link className="nav-link" to="/">
                 Home
               </Link>
             </li>
 
             <li className="nav-item">
-              <Link className="nav-link text-white" to="/features">
+              <Link className="nav-link" to="/features">
                 Features
               </Link>
             </li>
 
             <li className="nav-item">
-              <Link className="nav-link text-white" to="/contacto">
+              <Link className="nav-link" to="/contacto">
                 Contacto
               </Link>
             </li>
@@ -50,7 +52,7 @@ function Navbar() {
             {/* Dropdown */}
             <li className="nav-item dropdown">
               <Link
-                className="nav-link dropdown-toggle text-white"
+                className="nav-link dropdown-toggle"
                 to="#"
                 role="button"
                 data-bs-toggle="dropdown"
@@ -75,6 +77,11 @@ function Navbar() {
                   </Link>
                 </li>
               </ul>
+            </li>
+            <li className="nav-item">
+              <Link className="nav-link" to="/carrito">
+                Carrito
+              </Link>
             </li>
           </ul>
         </div>
