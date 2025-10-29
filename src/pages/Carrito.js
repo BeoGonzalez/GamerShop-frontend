@@ -6,10 +6,11 @@ function Carrito() {
 
   // Lista de productos disponibles
   const productos = [
-    { id: 1, nombre: "GTA7", precio: 100000 },
-    { id: 2, nombre: "Resident Evil 4 Remake", precio: 25000 },
-    { id: 3, nombre: "Dying Light", precio: 50000 },
-    { id: 4, nombre: "Minecraft", precio: 20000 },
+    { id: 1, nombre: "Mouse Gamer", precio: 20000 },
+    { id: 2, nombre: "Audifonos Gamer", precio: 55000 },
+    { id: 3, nombre: "Teclado gamer RGB", precio: 90000 },
+    { id: 4, nombre: "Monitor Gamer", precio: 220000 },
+    { id: 5, nombre: "Tarjeta gráfica", precio: 1250000 },
   ];
 
   // Agregar un producto al carrito
