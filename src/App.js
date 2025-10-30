@@ -6,8 +6,10 @@ import Navbar from "./components/Navbar";
 import Footer from "./components/Footer";
 import "bootstrap/dist/css/bootstrap.min.css";
 import Carrito from "./pages/Carrito";
-import Admin from "./pages/Admin";
 import Login from "./pages/Login";
+import AdminDashboard from "./pages/AdminDashboard";
+import Registro from "./pages/Registro";
+import Perfil from "./pages/Perfil";
 
 function App() {
   return (
@@ -20,7 +22,6 @@ function App() {
             <Route path="/categoria" element={<Categoria />} />
             <Route path="/contacto" element={<Contact />} />
             <Route path="/carrito" element={<Carrito />} />
-            <Route path="/admin" element={<Admin />} />
             <Route path="/login" element={<Login />} />
           </Routes>
         </main>

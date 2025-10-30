@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import React, { useState, useEffect } from "react";
 
 function Carrito() {
   // Estado local del carrito
@@ -47,13 +47,13 @@ function Carrito() {
   // Función para pagar
   const pagar = () => {
     if (!usuario) {
-      alert("🔒 Debes iniciar sesión para realizar la compra.");
-      window.location.href = "/login"; // Redirige sin useNavigate
+      alert("Debes iniciar sesión para realizar la compra.");
+      window.location.href = "/login";
       return;
     }
 
     if (carrito.length === 0) {
-      alert("🛒 Tu carrito está vacío.");
+      alert("Tu carrito está vacío.");
       return;
     }
 
@@ -122,7 +122,7 @@ function Carrito() {
       {/* Botón de pagar */}
       <div className="text-center">
         <button className="btn btn-success btn-lg" onClick={pagar}>
-          💳 Pagar
+          Pagar
         </button>
       </div>
     </div>
