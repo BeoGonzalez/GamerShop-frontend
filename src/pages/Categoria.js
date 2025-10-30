@@ -15,7 +15,7 @@ export default function Categoria() {
     {
       id: 1,
       nombre: "Mouse Gamer",
-      categoria: "Mouse",
+      categoria: "Mouses",
       precio: 25000,
       imagen: imagen1,
     },

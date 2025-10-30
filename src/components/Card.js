@@ -1,37 +1,33 @@
-import React from "react";
-import PropTypes from "prop-types";
+function Card({ producto, onAddToCart }) {
+  const handleBuy = () => {
+    const user = localStorage.getItem("user");
 
-function Card({ imageSource, title, text, url }) {
+    if (!user) {
+      alert("🔐 Debes iniciar sesión para comprar");
+      window.location.href = "/login"; // Redirige sin useNavigate
+      return;
+    }
+
+    onAddToCart(producto);
+  };
+
   return (
-    <div className="card text-center bg-dark animate__animated animate__fadeInUp">
-      <div className="overflow">
-        <img src={imageSource} alt="a wallpaper" className="card-img-top" />
-      </div>
-      <div className="card-body text-light">
-        <h4 className="card-title">{title}</h4>
-        <p className="card-text text-secondary">
-          {text
-            ? text
-            : "Lorem ipsum dolor sit amet consectetur, adipisicing elit. Magnam deserunt fuga accusantium excepturi quia, voluptates obcaecati nam in voluptas perferendis velit harum dignissimos quasi ex? Tempore repellat quo doloribus magnam."}
-        </p>
-        <a
-          href={url ? url : "#!"}
-          target="_blank"
-          className="btn btn-outline-secondary border-0"
-          rel="noreferrer"
-        >
-          Go to {title}
-        </a>
+    <div className="card h-100 text-center">
+      <img
+        src={producto.imagen}
+        alt={producto.nombre}
+        className="card-img-top"
+        style={{ height: "180px", objectFit: "cover" }}
+      />
+      <div className="card-body">
+        <h5 className="card-title">{producto.nombre}</h5>
+        <p className="fw-bold">${producto.precio}</p>
+        <button className="btn btn-success" onClick={handleBuy}>
+          Comprar
+        </button>
       </div>
     </div>
   );
 }
-
-Card.propTypes = {
-  title: PropTypes.string.isRequired,
-  text: PropTypes.string,
-  url: PropTypes.string,
-  imageSource: PropTypes.string,
-};
 
 export default Card;

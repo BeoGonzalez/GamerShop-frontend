@@ -1,17 +1,24 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
 function Carrito() {
   // Estado local del carrito
   const [carrito, setCarrito] = useState([]);
+  const [usuario, setUsuario] = useState(null);
 
   // Lista de productos disponibles
   const productos = [
     { id: 1, nombre: "Mouse Gamer", precio: 20000 },
-    { id: 2, nombre: "Audifonos Gamer", precio: 55000 },
-    { id: 3, nombre: "Teclado gamer RGB", precio: 90000 },
+    { id: 2, nombre: "Audífonos Gamer", precio: 55000 },
+    { id: 3, nombre: "Teclado Gamer RGB", precio: 90000 },
     { id: 4, nombre: "Monitor Gamer", precio: 220000 },
-    { id: 5, nombre: "Tarjeta gráfica", precio: 1250000 },
+    { id: 5, nombre: "Tarjeta Gráfica", precio: 1250000 },
   ];
+
+  // Cargar usuario (si está logueado)
+  useEffect(() => {
+    const userData = localStorage.getItem("user");
+    if (userData) setUsuario(JSON.parse(userData));
+  }, []);
 
   // Agregar un producto al carrito
   const agregarAlCarrito = (producto) => {
@@ -36,6 +43,23 @@ function Carrito() {
     (sum, item) => sum + item.precio * item.cantidad,
     0
   );
+
+  // Función para pagar
+  const pagar = () => {
+    if (!usuario) {
+      alert("🔒 Debes iniciar sesión para realizar la compra.");
+      window.location.href = "/login"; // Redirige sin useNavigate
+      return;
+    }
+
+    if (carrito.length === 0) {
+      alert("🛒 Tu carrito está vacío.");
+      return;
+    }
+
+    alert("✅ ¡Compra realizada con éxito!");
+    setCarrito([]); // Vaciar carrito
+  };
 
   return (
     <div className="container py-4">
@@ -93,6 +117,13 @@ function Carrito() {
       {/* Total */}
       <div className="alert alert-info text-center">
         Total: <strong>${total.toLocaleString()}</strong>
+      </div>
+
+      {/* Botón de pagar */}
+      <div className="text-center">
+        <button className="btn btn-success btn-lg" onClick={pagar}>
+          💳 Pagar
+        </button>
       </div>
     </div>
   );
