@@ -38,8 +38,8 @@ function Navbar() {
             </li>
 
             <li className="nav-item">
-              <Link className="nav-link" to="/features">
-                Categorias
+              <Link className="nav-link" to="/categoria">
+                Categoria
               </Link>
             </li>
 
