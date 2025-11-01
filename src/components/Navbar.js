@@ -38,8 +38,8 @@ function Navbar() {
             </li>
 
             <li className="nav-item">
-              <Link className="nav-link" to="/features">
-                Categorias
+              <Link className="nav-link" to="/categoria">
+                Categoria
               </Link>
             </li>
 
@@ -49,34 +49,10 @@ function Navbar() {
               </Link>
             </li>
 
-            {/* Dropdown */}
-            <li className="nav-item dropdown">
-              <Link
-                className="nav-link dropdown-toggle"
-                to="#"
-                role="button"
-                data-bs-toggle="dropdown"
-                aria-expanded="false"
-              >
-                Dropdown
+            <li className="nav-item">
+              <Link className="nav-link" to="/login">
+                Iniciar Sesión
               </Link>
-              <ul className="dropdown-menu">
-                <li>
-                  <Link className="dropdown-item" to="/action">
-                    Action
-                  </Link>
-                </li>
-                <li>
-                  <Link className="dropdown-item" to="/another-action">
-                    Another action
-                  </Link>
-                </li>
-                <li>
-                  <Link className="dropdown-item" to="/something-else">
-                    Something else here
-                  </Link>
-                </li>
-              </ul>
             </li>
             <li className="nav-item">
               <Link className="nav-link" to="/carrito">

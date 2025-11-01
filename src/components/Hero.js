@@ -31,48 +31,6 @@ function Hero() {
           <br />
           <span className="hero-title-light">Más rapido que nunca</span>
         </h1>
-
-        <div className="d-flex justify-content-center gap-4 mb-4 flex-wrap">
-          <button className="btn btn-link text-white text-decoration-none border-bottom border-3 border-warning pb-2 px-0">
-            Video
-          </button>
-          <button className="btn btn-link text-white text-decoration-none pb-2 px-0">
-            Video Templates
-          </button>
-          <button className="btn btn-link text-white text-decoration-none pb-2 px-0">
-            Audio
-          </button>
-          <button className="btn btn-link text-white text-decoration-none pb-2 px-0">
-            Images
-          </button>
-        </div>
-
-        <div className="row justify-content-center mb-4">
-          <div className="col-lg-8 col-12">
-            <div className="input-group input-group-lg hero-search">
-              <input
-                type="text"
-                className="form-control"
-                placeholder="Search..."
-                style={{
-                  borderTopLeftRadius: "50px",
-                  borderBottomLeftRadius: "50px",
-                  border: "none",
-                }}
-              />
-              <button
-                className="btn btn-warning px-5"
-                type="button"
-                style={{
-                  borderTopRightRadius: "50px",
-                  borderBottomRightRadius: "50px",
-                }}
-              >
-                Buscar
-              </button>
-            </div>
-          </div>
-        </div>
       </div>
     </div>
   );

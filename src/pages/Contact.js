@@ -2,7 +2,7 @@ function Contact() {
   return (
     <div className="container-fluid mt-5 px-5">
       <h1 className="text-success">Contáctanos</h1>
-      <p className="mb-4">Puedes escribirnos a contacto@ejemplo.com</p>
+      <p className="mb-4">Puedes escribirnos a gamershop230@gmail.com</p>
 
       <form>
         <div className="mb-3">
