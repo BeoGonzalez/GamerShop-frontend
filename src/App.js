@@ -7,9 +7,6 @@ import Footer from "./components/Footer";
 import "bootstrap/dist/css/bootstrap.min.css";
 import Carrito from "./pages/Carrito";
 import Login from "./pages/Login";
-import AdminDashboard from "./pages/AdminDashboard";
-import Registro from "./pages/Registro";
-import Perfil from "./pages/Perfil";
 
 function App() {
   return (
