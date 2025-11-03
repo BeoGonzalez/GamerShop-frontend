@@ -17,10 +17,9 @@
     "web-vitals": "^2.1.4"
   },
   "scripts": {
-     "start": "vite",
-    "build": "tsc && vite build",
+     "dev": "vite",
+    "build": "vite build",
     "preview": "vite preview",
-    "eject": "react-scripts eject",
     "test-karma": "karma start"
   },
   "eslintConfig": {
