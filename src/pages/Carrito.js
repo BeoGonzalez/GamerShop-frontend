@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import ProductoForm from "../components/ProductoForm";
 import ProductoList from "../components/ProductoList";
 
-const API_URL = "https://gamershop-backend-1.onrender.com/api/carrito";
+const API_URL = "https://gamershop-backend-1.onrender.com/carrito";
 
 function Carrito() {
     const [productos, setProductos] = useState([]);
