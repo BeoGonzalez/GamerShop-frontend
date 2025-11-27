@@ -89,7 +89,7 @@ function Carrito() {
 
             <div className="card shadow-sm">
                 <div className="card-body">
-                    <h3 className="card-title">📦 Administrar Productos en el Carrito</h3>
+                    <h3 className="card-title">Administrar Productos en el Carrito</h3>
 
                     {/* Componente ProductoForm */}
                     <ProductoForm onGuardar={guardarProducto} />
@@ -127,7 +127,7 @@ function Carrito() {
                             onClick={cargarProductos}
                             disabled={cargando}
                         >
-                            {cargando ? "Cargando..." : "🔄 Recargar Lista"}
+                            {cargando ? "Cargando..." : "Recargar Lista"}
                         </button>
                     </div>
 
