@@ -1,132 +1,146 @@
 import React, { useState, useEffect } from "react";
+import ProductoForm from "../components/ProductoForm";
+import ProductoList from "../components/ProductoList";
+
+const API_URL = "https://gamershop-backend-1.onrender.com/api/carrito";
 
 function Carrito() {
-  // Estado local del carrito
-  const [carrito, setCarrito] = useState([]);
-  const [usuario, setUsuario] = useState(null);
+    const [productos, setProductos] = useState([]);
+    const [cargando, setCargando] = useState(false);
+    const [error, setError] = useState(null);
 
-  // Lista de productos disponibles
-  const productos = [
-    { id: 1, nombre: "Mouse Gamer", precio: 20000 },
-    { id: 2, nombre: "Audífonos Gamer", precio: 55000 },
-    { id: 3, nombre: "Teclado Gamer RGB", precio: 90000 },
-    { id: 4, nombre: "Monitor Gamer", precio: 220000 },
-    { id: 5, nombre: "Tarjeta Gráfica", precio: 1250000 },
-  ];
+    // Cargar productos al montar el componente
+    useEffect(() => {
+        cargarProductos();
+    }, []);
 
-  // Cargar usuario (si está logueado)
-  useEffect(() => {
-    const userData = localStorage.getItem("user");
-    if (userData) setUsuario(JSON.parse(userData));
-  }, []);
+    // Función para cargar productos desde el backend
+    const cargarProductos = async () => {
+        setCargando(true);
+        setError(null);
 
-  // Agregar un producto al carrito
-  const agregarAlCarrito = (producto) => {
-    const index = carrito.findIndex((p) => p.nombre === producto.nombre);
-    if (index !== -1) {
-      const nuevoCarrito = [...carrito];
-      nuevoCarrito[index].cantidad += 1;
-      setCarrito(nuevoCarrito);
-    } else {
-      setCarrito([...carrito, { ...producto, cantidad: 1 }]);
-    }
-  };
+        try {
+            const response = await fetch(API_URL);
 
-  // Eliminar un producto del carrito
-  const eliminarDelCarrito = (index) => {
-    const nuevoCarrito = carrito.filter((_, i) => i !== index);
-    setCarrito(nuevoCarrito);
-  };
+            if (!response.ok) {
+                throw new Error('Error al cargar productos del servidor');
+            }
 
-  // Calcular total
-  const total = carrito.reduce(
-    (sum, item) => sum + item.precio * item.cantidad,
-    0
-  );
+            const data = await response.json();
+            setProductos(data);
+        } catch (error) {
+            console.error("Error al cargar productos:", error);
+            setError("No se pudieron cargar los productos. Verifica tu conexión.");
+        } finally {
+            setCargando(false);
+        }
+    };
 
-  // Función para pagar
-  const pagar = () => {
-    if (!usuario) {
-      alert("Debes iniciar sesión para realizar la compra.");
-      window.location.href = "/login";
-      return;
-    }
+    // Función para guardar un nuevo producto
+    const guardarProducto = async (nombre) => {
+        try {
+            const response = await fetch(API_URL, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ nombre }),
+            });
 
-    if (carrito.length === 0) {
-      alert("Tu carrito está vacío.");
-      return;
-    }
+            if (!response.ok) {
+                throw new Error('Error al guardar el producto');
+            }
 
-    alert("✅ ¡Compra realizada con éxito!");
-    setCarrito([]); // Vaciar carrito
-  };
+            alert("✅ Producto guardado exitosamente");
+            await cargarProductos(); // Recargar la lista
+        } catch (error) {
+            console.error("Error al guardar producto:", error);
+            alert("❌ Error al guardar el producto. Intenta nuevamente.");
+        }
+    };
 
-  return (
-    <div className="container py-4">
-      <h1 className="mb-4 text-center">Carrito de Compras</h1>
+    // Función para eliminar un producto
+    const eliminarProducto = async (id) => {
+        // Confirmación antes de eliminar
+        if (!window.confirm("¿Estás seguro de que deseas eliminar este producto?")) {
+            return;
+        }
 
-      {/* Productos disponibles */}
-      <h4>Productos disponibles</h4>
-      <div className="row mb-4">
-        {productos.map((p) => (
-          <div key={p.id} className="col-md-4 mb-3">
-            <div className="card h-100 text-center">
-              <div className="card-body">
-                <h5 className="card-title">{p.nombre}</h5>
-                <p className="card-text">${p.precio.toLocaleString()}</p>
-                <button
-                  className="btn btn-primary"
-                  onClick={() => agregarAlCarrito(p)}
-                >
-                  Agregar al carrito
-                </button>
-              </div>
+        try {
+            const response = await fetch(`${API_URL}/${id}`, {
+                method: 'DELETE',
+            });
+
+            if (!response.ok) {
+                throw new Error('Error al eliminar el producto');
+            }
+
+            alert("✅ Producto eliminado exitosamente");
+            await cargarProductos(); // Recargar la lista
+        } catch (error) {
+            console.error("Error al eliminar producto:", error);
+            alert("❌ Error al eliminar el producto. Intenta nuevamente.");
+        }
+    };
+
+    return (
+        <div className="container py-4">
+            <h1 className="mb-4 text-center">🛒 Gestión de Productos</h1>
+
+            <div className="card shadow-sm">
+                <div className="card-body">
+                    <h3 className="card-title">📦 Administrar Productos en el Carrito</h3>
+
+                    {/* Componente ProductoForm */}
+                    <ProductoForm onGuardar={guardarProducto} />
+
+                    {/* Mostrar error si existe */}
+                    {error && (
+                        <div className="alert alert-danger" role="alert">
+                            {error}
+                        </div>
+                    )}
+
+                    {/* Lista de productos */}
+                    <div className="mt-4">
+                        <h4>Lista de Productos</h4>
+
+                        {cargando ? (
+                            <div className="text-center py-3">
+                                <div className="spinner-border text-primary" role="status">
+                                    <span className="visually-hidden">Cargando...</span>
+                                </div>
+                                <p className="mt-2">Cargando productos...</p>
+                            </div>
+                        ) : (
+                            <ProductoList
+                                productos={productos}
+                                onEliminar={eliminarProducto}
+                            />
+                        )}
+                    </div>
+
+                    {/* Botón para recargar */}
+                    <div className="text-center mt-4">
+                        <button
+                            className="btn btn-secondary"
+                            onClick={cargarProductos}
+                            disabled={cargando}
+                        >
+                            {cargando ? "Cargando..." : "🔄 Recargar Lista"}
+                        </button>
+                    </div>
+
+                    {/* Contador de productos */}
+                    {!cargando && productos.length > 0 && (
+                        <div className="alert alert-info mt-3 text-center">
+                            Total de productos: <strong>{productos.length}</strong>
+                        </div>
+                    )}
+                </div>
             </div>
-          </div>
-        ))}
-      </div>
-
-      {/* Sección del carrito */}
-      <h4>Tu Carrito</h4>
-      {carrito.length === 0 ? (
-        <p className="text-muted">El carrito está vacío</p>
-      ) : (
-        <ul className="list-group mb-3">
-          {carrito.map((item, index) => (
-            <li
-              key={index}
-              className="list-group-item d-flex justify-content-between align-items-center"
-            >
-              {item.nombre} x{item.cantidad}
-              <div>
-                <span className="me-3">
-                  ${(item.precio * item.cantidad).toLocaleString()}
-                </span>
-                <button
-                  className="btn btn-danger btn-sm"
-                  onClick={() => eliminarDelCarrito(index)}
-                >
-                  Eliminar
-                </button>
-              </div>
-            </li>
-          ))}
-        </ul>
-      )}
-
-      {/* Total */}
-      <div className="alert alert-info text-center">
-        Total: <strong>${total.toLocaleString()}</strong>
-      </div>
-
-      {/* Botón de pagar */}
-      <div className="text-center">
-        <button className="btn btn-success btn-lg" onClick={pagar}>
-          Pagar
-        </button>
-      </div>
-    </div>
-  );
+        </div>
+    );
 }
 
 export default Carrito;
