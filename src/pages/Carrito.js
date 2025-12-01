@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from "react";
 import ProductoForm from "../components/ProductoForm";
 import ProductoList from "../components/ProductoList";
-import "../../src/Carrito.css";
+// Asegúrate de que la ruta del CSS sea correcta según tu estructura
+import "../Carrito.css";
 
 const API_URL = "https://gamershop-backend-1.onrender.com/api/producto";
 
@@ -9,6 +10,15 @@ function Carrito() {
   const [productos, setProductos] = useState([]);
   const [cargando, setCargando] = useState(false);
   const [error, setError] = useState(null);
+
+  // --- CORRECCIÓN 1: Helper para enviar el Token ---
+  const getAuthHeaders = () => {
+    const token = localStorage.getItem("token");
+    return {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${token}`, // ¡CRUCIAL!
+    };
+  };
 
   useEffect(() => {
     cargarProductos();
@@ -18,13 +28,22 @@ function Carrito() {
     setCargando(true);
     setError(null);
     try {
-      const response = await fetch(API_URL);
-      if (!response.ok) throw new Error("Error de conexión con el servidor");
+      // --- CORRECCIÓN 2: Usar headers con token ---
+      const response = await fetch(API_URL, {
+        method: "GET",
+        headers: getAuthHeaders(),
+      });
+
+      if (!response.ok) {
+        if (response.status === 403)
+          throw new Error("Acceso denegado. Inicia sesión nuevamente.");
+        throw new Error("Error de conexión con el servidor");
+      }
       const data = await response.json();
       setProductos(data);
     } catch (error) {
       console.error("Error:", error);
-      setError("No se pudo sincronizar con la base de datos.");
+      setError(error.message);
     } finally {
       setCargando(false);
     }
@@ -34,12 +53,11 @@ function Carrito() {
     try {
       const response = await fetch(API_URL, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: getAuthHeaders(), // --- CORRECCIÓN 3 ---
         body: JSON.stringify(nuevoProducto),
       });
       if (!response.ok) throw new Error("Falló el guardado");
       const productoGuardado = await response.json();
-      // Optimización: Actualizamos estado local sin recargar todo
       setProductos((prev) => [...prev, productoGuardado]);
     } catch (error) {
       alert(`❌ SYSTEM ERROR: ${error.message}`);
@@ -49,14 +67,16 @@ function Carrito() {
   const eliminarProducto = async (id) => {
     if (!window.confirm("¿Confirmar eliminación del sistema?")) return;
     const backup = [...productos];
-    // Optimización: UI Optimista (borramos visualmente primero)
     setProductos(productos.filter((p) => p.id !== id));
     try {
-      const response = await fetch(`${API_URL}/${id}`, { method: "DELETE" });
+      const response = await fetch(`${API_URL}/${id}`, {
+        method: "DELETE",
+        headers: getAuthHeaders(), // --- CORRECCIÓN 4 ---
+      });
       if (!response.ok) throw new Error("Error al eliminar del backend");
     } catch (error) {
       alert(`❌ Error: ${error.message}`);
-      setProductos(backup); // Revertir si falla
+      setProductos(backup);
     }
   };
 

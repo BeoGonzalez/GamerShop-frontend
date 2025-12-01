@@ -3,7 +3,7 @@ import ProductoForm from "./ProductoForm";
 import ProductoList from "./ProductoList";
 import "../Carrito.css"; // Mantenemos el estilo Gamer
 
-const API_URL = "https://gamershop-backend-1.onrender.com/carrito";
+const API_URL = "https://gamershop-backend-1.onrender.com/api/producto";
 
 function AdminPanel() {
   const [productos, setProductos] = useState([]);
