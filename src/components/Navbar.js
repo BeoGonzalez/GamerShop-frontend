@@ -1,69 +1,77 @@
+import React from "react";
 import { Link } from "react-router-dom";
-import Tema from "./Tema";
-import logo from "../assets/logo.png";
 
-function Navbar() {
+function Navbar({ isAuth, role, onLogout }) {
   return (
-    <nav className="navbar navbar-expand-lg bg-body-tertiary border-bottom border-body">
+    <nav className="navbar navbar-expand-lg navbar-dark bg-dark px-4 border-bottom border-secondary">
       <div className="container-fluid">
-        {/* Marca / logo */}
-        <Link className="navbar-brand" to="/">
-          <img src={logo} alt="Logo" width="60" height="60" />
-          Gamershop
+        <Link className="navbar-brand text-info fw-bold" to="/">
+          GAMEZONE
         </Link>
 
-        {/* Botón colapsable */}
         <button
           className="navbar-toggler"
           type="button"
           data-bs-toggle="collapse"
-          data-bs-target="#navbarNavDropdown"
-          aria-controls="navbarNavDropdown"
-          aria-expanded="false"
-          aria-label="Toggle navigation"
+          data-bs-target="#navbarNav"
         >
           <span className="navbar-toggler-icon"></span>
         </button>
 
-        {/* Menú centrado */}
-        <div
-          className="collapse navbar-collapse justify-content-center"
-          id="navbarNavDropdown"
-        >
-          <ul className="navbar-nav">
+        <div className="collapse navbar-collapse" id="navbarNav">
+          <ul className="navbar-nav me-auto">
             <li className="nav-item">
               <Link className="nav-link" to="/">
-                Home
+                Inicio
               </Link>
             </li>
-
             <li className="nav-item">
               <Link className="nav-link" to="/categoria">
-                Categoria
+                Categorías
               </Link>
             </li>
-
             <li className="nav-item">
               <Link className="nav-link" to="/contacto">
                 Contacto
               </Link>
             </li>
 
-            <li className="nav-item">
-              <Link className="nav-link" to="/login">
+            {/* Solo mostramos "Tienda" si está logueado (opcional) */}
+            {isAuth && (
+              <li className="nav-item">
+                <Link className="nav-link" to="/carrito">
+                  Tienda
+                </Link>
+              </li>
+            )}
+
+            {/* ENLACE EXCLUSIVO ADMIN */}
+            {isAuth && role === "ADMIN" && (
+              <li className="nav-item">
+                <Link className="nav-link text-warning fw-bold" to="/admin">
+                  ⚙️ Panel Admin
+                </Link>
+              </li>
+            )}
+          </ul>
+
+          <div className="d-flex">
+            {!isAuth ? (
+              <Link className="btn btn-outline-info" to="/login">
                 Iniciar Sesión
               </Link>
-            </li>
-            <li className="nav-item">
-              <Link className="nav-link" to="/carrito">
-                Carrito
-              </Link>
-            </li>
-          </ul>
+            ) : (
+              <div className="d-flex align-items-center gap-3">
+                <span className="text-muted small d-none d-md-block">
+                  {role === "ADMIN" ? "Comandante" : "Jugador"}
+                </span>
+                <button onClick={onLogout} className="btn btn-sm btn-danger">
+                  Salir 🚪
+                </button>
+              </div>
+            )}
+          </div>
         </div>
-
-        {/* Tema (a la derecha) */}
-        <Tema />
       </div>
     </nav>
   );

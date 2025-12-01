@@ -3,7 +3,7 @@ import ProductoForm from "../components/ProductoForm";
 import ProductoList from "../components/ProductoList";
 import "../../src/Carrito.css";
 
-const API_URL = "https://gamershop-backend-1.onrender.com/carrito";
+const API_URL = "https://gamershop-backend-1.onrender.com/api/producto";
 
 function Carrito() {
   const [productos, setProductos] = useState([]);
