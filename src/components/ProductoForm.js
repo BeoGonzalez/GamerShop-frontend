@@ -66,7 +66,7 @@ function ProductoForm({ onGuardar }) {
           Precio
         </label>
         <input
-          className="gamer-input"
+          className="form-control gamer-input"
           placeholder="0"
           value={precio}
           onChange={(e) => setPrecio(e.target.value)}
