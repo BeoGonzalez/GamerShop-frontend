@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import ProductoForm from "../components/ProductoForm";
 import ProductoList from "../components/ProductoList";
-import "../../src/Carrito.css"; // Asegúrate de importar el CSS
+import "../../src/Carrito.css";
 
 const API_URL = "https://gamershop-backend-1.onrender.com/carrito";
 
@@ -64,13 +64,13 @@ function Carrito() {
     <div className="gamer-container py-5">
       <div className="container">
         <h1 className="mb-5 text-center gamer-title">
-          ⚙️ GameZone <span className="highlight">Manager</span>
+          GamerShop <span className="highlight">Producto Manager</span>
         </h1>
         <div className="row g-5">
           <div className="col-lg-4">
             <div className="gamer-panel">
               <div className="gamer-panel-header">
-                <h5>⚡ Ingreso de Datos</h5>
+                <h5>⚡ Ingresar Datos</h5>
               </div>
               <div className="gamer-panel-body">
                 <ProductoForm onGuardar={guardarProducto} />

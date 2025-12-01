@@ -41,7 +41,7 @@ function ProductoList({ productos, onEliminar }) {
               onClick={() => onEliminar(producto.id)}
               aria-label={`Eliminar ${producto.nombre}`}
             >
-              ELIMINAR 🗑️
+              ELIMINAR
             </button>
           </div>
         </li>

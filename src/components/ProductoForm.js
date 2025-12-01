@@ -52,7 +52,7 @@ function ProductoForm({ onGuardar }) {
         </label>
         <input
           className="form-control gamer-input"
-          placeholder="Ej: Periférico"
+          placeholder="Ej: Mouse, Tarjeta Gráfica, Monitor"
           value={categoria}
           onChange={(e) => setCategoria(e.target.value)}
           type="text"
@@ -63,7 +63,7 @@ function ProductoForm({ onGuardar }) {
 
       <div className="mb-4">
         <label htmlFor="precio" className="form-label gamer-label">
-          Precio Unitario (USD)
+          Precio
         </label>
         <input
           className="form-control gamer-input"
@@ -79,7 +79,7 @@ function ProductoForm({ onGuardar }) {
 
       <div className="d-grid">
         <button className="btn btn-gamer-primary btn-lg" type="submit">
-          GUARDAR EN SISTEMA 💾
+          Guardar Producto
         </button>
       </div>
     </form>
