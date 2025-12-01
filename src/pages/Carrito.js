@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import ProductoForm from "../components/ProductoForm";
 import ProductoList from "../components/ProductoList";
-import "../Carrito.css"; // <--- IMPORTANTE: Importa tu nuevo CSS aquí
+import "../../src/Carrito.css"; // Asegúrate de importar el CSS
 
 const API_URL = "https://gamershop-backend-1.onrender.com/carrito";
 
@@ -37,11 +37,9 @@ function Carrito() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(nuevoProducto),
       });
-
       if (!response.ok) throw new Error("Falló el guardado");
       const productoGuardado = await response.json();
-
-      // Actualización optimista (más rápida)
+      // Optimización: Actualizamos estado local sin recargar todo
       setProductos((prev) => [...prev, productoGuardado]);
     } catch (error) {
       alert(`❌ SYSTEM ERROR: ${error.message}`);
@@ -50,10 +48,9 @@ function Carrito() {
 
   const eliminarProducto = async (id) => {
     if (!window.confirm("¿Confirmar eliminación del sistema?")) return;
-
     const backup = [...productos];
-    setProductos(productos.filter((p) => p.id !== id)); // Borrado visual inmediato
-
+    // Optimización: UI Optimista (borramos visualmente primero)
+    setProductos(productos.filter((p) => p.id !== id));
     try {
       const response = await fetch(`${API_URL}/${id}`, { method: "DELETE" });
       if (!response.ok) throw new Error("Error al eliminar del backend");
@@ -67,13 +64,11 @@ function Carrito() {
     <div className="gamer-container py-5">
       <div className="container">
         <h1 className="mb-5 text-center gamer-title">
-          ⚙️ GameZone <span className="highlight">System Manager</span>
+          ⚙️ GameZone <span className="highlight">Manager</span>
         </h1>
-
         <div className="row g-5">
-          {/* Columna Izquierda: Panel de Ingreso */}
           <div className="col-lg-4">
-            <div className="gamer-panel h-100">
+            <div className="gamer-panel">
               <div className="gamer-panel-header">
                 <h5>⚡ Ingreso de Datos</h5>
               </div>
@@ -87,25 +82,20 @@ function Carrito() {
               </div>
             </div>
           </div>
-
-          {/* Columna Derecha: Inventario */}
           <div className="col-lg-8">
-            <div className="gamer-panel h-100">
+            <div className="gamer-panel">
               <div className="gamer-panel-header d-flex justify-content-between align-items-center">
-                <h4>📦 Inventario Actual</h4>
+                <h4>📦 Inventario</h4>
                 <span className="badge bg-dark border border-info text-info">
                   Items: {productos.length}
                 </span>
               </div>
               <div className="gamer-panel-body">
                 {cargando ? (
-                  <div className="d-flex justify-content-center py-5 align-items-center flex-column">
-                    <div
-                      className="spinner-border text-info mb-3"
-                      role="status"
-                      style={{ width: "3rem", height: "3rem" }}
-                    ></div>
-                    <p className="text-info">Sincronizando datos...</p>
+                  <div className="text-center py-5 text-info">
+                    <div className="spinner-border mb-3" role="status"></div>
+                    <br />
+                    Sincronizando...
                   </div>
                 ) : (
                   <ProductoList
@@ -121,5 +111,4 @@ function Carrito() {
     </div>
   );
 }
-
 export default Carrito;
