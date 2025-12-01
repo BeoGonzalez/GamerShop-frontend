@@ -1,0 +1,192 @@
+/* Carrito.css - Estética Gamer Cyberpunk */
+:root {
+  --neon-blue: #00f3ff;
+  --neon-pink: #bc13fe;
+  --dark-bg: #0a0a12;
+  --panel-bg: #161625;
+  --text-light: #e0e0ff;
+}
+
+body {
+  background-color: var(--dark-bg);
+  color: var(--text-light);
+  font-family: "Segoe UI", Roboto, "Helvetica Neue", sans-serif;
+  background-image: linear-gradient(
+      rgba(10, 10, 18, 0.9),
+      rgba(10, 10, 18, 0.9)
+    ),
+    url("https://www.transparenttextures.com/patterns/cubes.png"); /* Patrón sutil de fondo opcional */
+}
+
+/* --- Contenedores y Títulos --- */
+.gamer-container {
+  min-height: 100vh;
+}
+
+.gamer-title {
+  text-transform: uppercase;
+  letter-spacing: 3px;
+  font-weight: 800;
+  text-shadow: 0 0 10px rgba(0, 243, 255, 0.5);
+}
+
+.gamer-title .highlight {
+  color: var(--neon-blue);
+}
+
+/* --- Tarjetas "Gamer Panel" --- */
+.gamer-panel {
+  background-color: var(--panel-bg);
+  border: 1px solid #2a2a40;
+  box-shadow: 0 0 20px rgba(0, 0, 0, 0.5);
+  border-radius: 8px;
+  overflow: hidden;
+  position: relative;
+}
+
+/* Efecto de borde superior brillante */
+.gamer-panel::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 3px;
+  background: linear-gradient(90deg, var(--neon-blue), var(--neon-pink));
+}
+
+.gamer-panel-header {
+  background-color: rgba(0, 0, 0, 0.2);
+  padding: 15px 20px;
+  border-bottom: 1px solid #2a2a40;
+}
+
+.gamer-panel-header h5,
+.gamer-panel-header h4 {
+  color: var(--neon-blue);
+  text-transform: uppercase;
+  font-weight: 700;
+  letter-spacing: 1px;
+  margin: 0;
+}
+
+.gamer-panel-body {
+  padding: 25px;
+}
+
+/* --- Inputs y Formularios --- */
+.gamer-label {
+  color: var(--neon-blue);
+  font-weight: 600;
+  font-size: 0.9rem;
+  text-transform: uppercase;
+}
+
+.form-control.gamer-input {
+  background-color: rgba(0, 0, 0, 0.3);
+  border: 1px solid #2a2a40;
+  color: var(--text-light);
+  border-radius: 4px;
+  transition: all 0.3s ease;
+}
+
+.form-control.gamer-input:focus {
+  background-color: rgba(0, 243, 255, 0.05);
+  border-color: var(--neon-blue);
+  box-shadow: 0 0 10px rgba(0, 243, 255, 0.2);
+  color: #fff;
+}
+
+.form-control.gamer-input::placeholder {
+  color: rgba(224, 224, 255, 0.4);
+}
+
+/* --- Botones --- */
+.btn-gamer-primary {
+  background: linear-gradient(45deg, var(--neon-blue), var(--neon-pink));
+  border: none;
+  color: white;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  padding: 10px 20px;
+  box-shadow: 0 0 15px rgba(0, 243, 255, 0.3);
+  transition: all 0.3s ease;
+}
+
+.btn-gamer-primary:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 0 25px rgba(0, 243, 255, 0.5);
+  color: white;
+}
+
+.btn-gamer-danger {
+  background-color: transparent;
+  border: 1px solid #ff4757;
+  color: #ff4757;
+  transition: all 0.3s ease;
+}
+
+.btn-gamer-danger:hover {
+  background-color: #ff4757;
+  color: white;
+  box-shadow: 0 0 10px rgba(255, 71, 87, 0.5);
+}
+
+/* --- Lista de Productos (Inventory Slots) --- */
+.inventory-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.inventory-item {
+  background-color: rgba(255, 255, 255, 0.03);
+  border: 1px solid #2a2a40;
+  margin-bottom: 15px;
+  border-radius: 6px;
+  padding: 15px;
+  transition: all 0.3s ease;
+  border-left: 3px solid transparent;
+}
+
+.inventory-item:hover {
+  border-color: var(--neon-blue);
+  border-left: 3px solid var(--neon-blue);
+  background-color: rgba(0, 243, 255, 0.03);
+  transform: translateX(5px);
+}
+
+.item-name {
+  font-size: 1.2rem;
+  color: white;
+  display: block;
+  margin-bottom: 5px;
+}
+
+.item-id {
+  font-family: "Courier New", monospace;
+  font-size: 0.8rem;
+  color: rgba(224, 224, 255, 0.5);
+}
+
+/* Badges personalizados */
+.badge-gamer {
+  padding: 0.5em 0.8em;
+  text-transform: uppercase;
+  font-size: 0.75rem;
+  letter-spacing: 1px;
+  border-radius: 2px;
+}
+.badge-category {
+  background-color: rgba(188, 19, 254, 0.2);
+  color: var(--neon-pink);
+  border: 1px solid var(--neon-pink);
+}
+.badge-price {
+  background-color: rgba(0, 243, 255, 0.2);
+  color: var(--neon-blue);
+  border: 1px solid var(--neon-blue);
+  font-weight: bold;
+  font-size: 1rem;
+}
