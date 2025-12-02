@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
-import ProductoForm from "./ProductoForm";
-import ProductoList from "./ProductoList";
+import ProductoForm from "../components/ProductoForm";
+import ProductoList from "../components/ProductoList";
 import "../Carrito.css"; // Mantenemos el estilo Gamer
 
 const API_URL = "https://gamershop-backend-1.onrender.com/api/producto";
@@ -83,7 +83,7 @@ function AdminPanel() {
         {/* Header del Dashboard */}
         <div className="d-flex justify-content-between align-items-center mb-5">
           <h1 className="gamer-title m-0">
-            🛡️ COMMAND <span className="highlight">CENTER</span>
+            Gestión de prodctos <span className="highlight">Gamers</span>
           </h1>
           <div className="text-end">
             <span className="badge bg-dark border border-secondary p-2 me-2">

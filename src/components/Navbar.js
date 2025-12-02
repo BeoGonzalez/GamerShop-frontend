@@ -6,7 +6,7 @@ function Navbar({ isAuth, role, onLogout }) {
     <nav className="navbar navbar-expand-lg navbar-dark bg-dark px-4 border-bottom border-secondary">
       <div className="container-fluid">
         <Link className="navbar-brand text-info fw-bold" to="/">
-          GAMEZONE
+          GamerShop
         </Link>
 
         <button

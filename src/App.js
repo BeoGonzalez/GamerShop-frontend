@@ -13,7 +13,7 @@ import Contact from "./pages/Contact";
 import Categoria from "./pages/Categoria";
 import Carrito from "./pages/Carrito"; // Asumimos que esta es la Tienda/Carrito visual
 import Login from "./pages/Login";
-import AdminPanel from "./components/AdminPanel"; // El panel nuevo que creamos
+import AdminPanel from "./pages/AdminPanel"; // El panel nuevo que creamos
 
 function App() {
   // 1. Estado de Autenticación
