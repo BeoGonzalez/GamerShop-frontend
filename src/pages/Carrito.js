@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import "../Carrito.css";
 
@@ -17,11 +17,12 @@ function Carrito() {
     return saved ? JSON.parse(saved) : [];
   });
 
-  // Estados para la Boleta Falsa
+  // Estados para la Boleta Falsa (Modal)
   const [showReceipt, setShowReceipt] = useState(false);
   const [lastOrder, setLastOrder] = useState(null);
 
   // Función auxiliar para obtener Headers con Token
+  // (No necesita estar dentro de useCallback porque no depende de estados)
   const getAuthHeaders = () => {
     const token = localStorage.getItem("token");
     return token
@@ -29,12 +30,12 @@ function Carrito() {
       : {};
   };
 
-  // 1. Cargar productos de la BD (Ahora traen el campo 'stock')
-  const fetchProductos = async () => {
+  // 1. Cargar productos de la BD
+  // CORRECCIÓN: Usamos useCallback para estabilizar la función
+  const fetchProductos = useCallback(async () => {
     setLoading(true);
     try {
       const headers = getAuthHeaders();
-      // Si hay token lo usamos, si no, hacemos petición pública (GET es permitido)
       const config = headers.Authorization ? { headers } : {};
 
       const response = await fetch(API_URL, config);
@@ -49,11 +50,12 @@ function Carrito() {
     } finally {
       setLoading(false);
     }
-  };
+  }, []); // Array vacío: la función no depende de props ni estados externos cambiantes
 
+  // Cargar al inicio (Ahora sí es seguro poner la dependencia)
   useEffect(() => {
     fetchProductos();
-  }, []);
+  }, [fetchProductos]);
 
   // 2. Guardar carrito en LocalStorage al cambiar
   useEffect(() => {
@@ -71,14 +73,16 @@ function Carrito() {
     }
 
     // --- VALIDACIÓN DE STOCK ---
-    // Verificamos cuánto tenemos ya en el carrito
     const itemInCart = carrito.find((item) => item.id === producto.id);
     const cantidadActual = itemInCart ? itemInCart.cantidad : 0;
 
-    // Obtenemos el stock real (si es undefined, asumimos 0)
     const stockReal = producto.stock !== undefined ? producto.stock : 0;
 
-    // Si intentar agregar 1 más supera el stock real
+    if (stockReal <= 0) {
+      alert("❌ Este producto está agotado.");
+      return;
+    }
+
     if (cantidadActual + 1 > stockReal) {
       alert(`❌ Stock insuficiente. Solo quedan ${stockReal} unidades.`);
       return;
@@ -108,17 +112,15 @@ function Carrito() {
     setCarrito((prev) =>
       prev.map((item) => {
         if (item.id === id) {
-          // Buscamos el stock máximo real desde la lista de productos
           const productoReal = productos.find((p) => p.id === id);
           const maxStock = productoReal ? productoReal.stock : 0;
 
           const newQuantity = item.cantidad + amount;
 
-          // Validaciones
-          if (newQuantity < 1) return item; // No bajar de 1
+          if (newQuantity < 1) return item;
           if (newQuantity > maxStock) {
             alert(`⚠️ No puedes llevar más de ${maxStock} unidades.`);
-            return item; // No subir más allá del stock
+            return item;
           }
 
           return { ...item, cantidad: newQuantity };
@@ -138,22 +140,17 @@ function Carrito() {
     if (carrito.length === 0) return;
 
     try {
-      // 1. Enviar la petición de compra al Backend para restar stock
       const response = await fetch(`${API_URL}/comprar`, {
         method: "POST",
         headers: getAuthHeaders(),
-        body: JSON.stringify(carrito), // Enviamos la lista de items
+        body: JSON.stringify(carrito),
       });
 
       if (!response.ok) {
-        // Si el backend dice que no hay stock, mostramos el error
         const errorText = await response.text();
         throw new Error(errorText);
       }
 
-      // 2. Si todo sale bien (Backend respondió 200 OK)
-
-      // Generamos los datos para la boleta visual
       const orderData = {
         id: Math.floor(Math.random() * 900000) + 100000,
         fecha: new Date().toLocaleString(),
@@ -162,15 +159,11 @@ function Carrito() {
       };
 
       setLastOrder(orderData);
-
-      // 3. Limpiamos el carrito local
       setCarrito([]);
       localStorage.removeItem("user_cart");
-
-      // 4. Mostramos la boleta
       setShowReceipt(true);
 
-      // 5. IMPORTANTE: Recargamos los productos para ver el stock actualizado en la pantalla
+      // Recargamos los productos para ver el stock actualizado
       fetchProductos();
     } catch (error) {
       alert("❌ Error al procesar la compra: " + error.message);
@@ -359,7 +352,6 @@ function Carrito() {
 
 // Componente Card con visualización de STOCK
 function Card({ producto, onAddToCart }) {
-  // Verificamos si hay stock (asumiendo que si stock es undefined o null es 0 por seguridad)
   const stockDisponible = producto.stock !== undefined ? producto.stock : 0;
   const sinStock = stockDisponible <= 0;
 
