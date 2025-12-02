@@ -1,21 +1,20 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import "../Carrito.css"; // Reutilizamos tus estilos cyberpunk
+import "../Carrito.css"; // Estilos Gamer
 
 function Login({ onLogin }) {
   const navigate = useNavigate();
 
-  // Estados del formulario
-  const [isRegistering, setIsRegistering] = useState(false); // Alternar entre Login y Registro
+  // --- ESTADOS ---
+  const [isRegistering, setIsRegistering] = useState(false); // Switch Login/Registro
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
-  const [rol, setRol] = useState("USER"); // Rol por defecto
+  const [rol, setRol] = useState("USER"); // Por defecto USER
 
-  // Estados de UI
   const [error, setError] = useState(null);
   const [loading, setLoading] = useState(false);
 
-  // URL de tu Backend (Endpoints de AuthController)
+  // URL del Backend
   const API_AUTH = "https://gamershop-backend-1.onrender.com/auth";
 
   const handleSubmit = async (e) => {
@@ -25,85 +24,91 @@ function Login({ onLogin }) {
 
     const endpoint = isRegistering ? "/register" : "/login";
 
-    // Si es registro enviamos el rol, si es login solo user/pass
+    // Preparar el cuerpo de la petición
+    // Si es login, no enviamos el rol. Si es registro, sí.
     const body = isRegistering
       ? { username, password, rol }
       : { username, password };
 
     try {
+      console.log(`Enviando petición a: ${API_AUTH}${endpoint}`);
+
       const response = await fetch(API_AUTH + endpoint, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(body),
       });
 
-      // Manejo de errores del servidor (ej: "Usuario ya existe" o "Credenciales incorrectas")
-      if (!response.ok) {
-        const errorText = await response.text();
-        throw new Error(errorText || "Error en la autenticación");
+      // LEER LA RESPUESTA DE FORMA SEGURA
+      // El backend devuelve texto plano para registro y JSON para login.
+      // Leemos como texto primero para no romper el JSON.parse
+      const dataText = await response.text();
+      let data;
+      try {
+        data = JSON.parse(dataText); // Intentamos convertir a JSON (Login)
+      } catch {
+        data = dataText; // Si falla, es texto plano (Registro o Error simple)
       }
 
-      // Lógica de éxito
+      if (!response.ok) {
+        // Si hay error, lanzamos una excepción con el mensaje del servidor
+        throw new Error(typeof data === 'string' ? data : (data.message || "Error en la solicitud"));
+      }
+
+      // --- MANEJO DE ÉXITO ---
+
       if (isRegistering) {
-        alert("✅ Cuenta creada con éxito. Ahora inicia sesión.");
-        setIsRegistering(false); // Cambiar a vista de login automáticamente
+        // CASO 1: REGISTRO EXITOSO
+        alert("✅ " + (typeof data === 'string' ? data : "Cuenta creada con éxito."));
+        setIsRegistering(false); // Cambiar a la vista de Login
         setPassword(""); // Limpiar contraseña por seguridad
+        setError(null);
       } else {
-        // LOGIN EXITOSO
-        const data = await response.json();
+        // CASO 2: LOGIN EXITOSO
+        console.log("Login OK:", data);
 
-        // data debe contener: { token: "...", rol: "...", username: "..." }
-        console.log("Login exitoso:", data);
-
-        // Guardamos en LocalStorage por redundancia (aunque App.js también lo maneja)
+        // Guardamos en LocalStorage
         localStorage.setItem("token", data.token);
         localStorage.setItem("rol", data.rol);
+        localStorage.setItem("username", data.username);
 
-        // Notificamos a App.js para que actualice el estado y redirija
+        // Actualizamos el estado global en App.js (Navbar, Rutas protegidas)
         if (onLogin) {
           onLogin(data.token, data.rol);
         }
 
-        // Redirigir al home (o App.js lo hará por el cambio de estado)
+        // Redirigir al inicio
         navigate("/");
       }
+
     } catch (err) {
       console.error("Error Auth:", err);
-      setError(err.message);
+      setError(err.message || "No se pudo conectar con el servidor.");
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div
-      className="gamer-container d-flex justify-content-center align-items-center"
-      style={{ minHeight: "80vh" }}
-    >
-      <div
-        className="gamer-panel p-4 p-md-5 fade-in-up"
-        style={{ maxWidth: "450px", width: "100%" }}
-      >
+    <div className="gamer-container d-flex justify-content-center align-items-center" style={{ minHeight: "80vh" }}>
+      <div className="gamer-panel p-4 p-md-5 fade-in-up" style={{ maxWidth: "450px", width: "100%" }}>
+
         <h2 className="text-center gamer-title mb-4">
           {isRegistering ? (
-            <>
-              NUEVO <span className="highlight">JUGADOR</span>
-            </>
+            <>NUEVO <span className="highlight">JUGADOR</span></>
           ) : (
-            <>
-              ACCESO <span className="highlight">SISTEMA</span>
-            </>
+            <>ACCESO <span className="highlight">SISTEMA</span></>
           )}
         </h2>
 
         <form onSubmit={handleSubmit}>
-          {/* Campo Usuario */}
+          {/* Input Usuario */}
           <div className="mb-3">
             <label className="gamer-label">Nombre de Usuario</label>
             <input
               className="form-control gamer-input"
               type="text"
-              placeholder="Ej: MasterChief117"
+              placeholder="Ej: MasterChief"
               value={username}
               onChange={(e) => setUsername(e.target.value)}
               required
@@ -111,7 +116,7 @@ function Login({ onLogin }) {
             />
           </div>
 
-          {/* Campo Contraseña */}
+          {/* Input Contraseña */}
           <div className="mb-4">
             <label className="gamer-label">Contraseña</label>
             <input
@@ -133,35 +138,32 @@ function Login({ onLogin }) {
                 value={rol}
                 onChange={(e) => setRol(e.target.value)}
               >
-                <option value="USER">Usuario</option>
-                <option value="ADMIN">Administrador</option>
+                <option value="USER">Jugador (Usuario Cliente)</option>
+                <option value="ADMIN">Game Master (Administrador)</option>
               </select>
+              <small className="text-muted mt-1 d-block" style={{ fontSize: "0.8em" }}>
+                * Selecciona "Game Master" para gestionar el inventario.
+              </small>
             </div>
           )}
 
           {/* Mensaje de Error */}
           {error && (
-            <div className="alert alert-danger bg-transparent text-danger border-danger p-2 text-center mb-3">
+            <div className="alert alert-danger bg-transparent text-danger border-danger p-2 text-center mb-3 small">
               ❌ {error}
             </div>
           )}
 
-          {/* Botón Submit */}
+          {/* Botón de Acción */}
           <button
-            className="btn btn-gamer-primary w-100 py-2 mb-3 fw-bold"
+            className="btn btn-gamer-primary w-100 py-2 fw-bold mb-3"
             type="submit"
             disabled={loading}
           >
             {loading ? (
-              <span
-                className="spinner-border spinner-border-sm me-2"
-                role="status"
-                aria-hidden="true"
-              ></span>
-            ) : isRegistering ? (
-              "REGISTRARSE"
+              <span><span className="spinner-border spinner-border-sm me-2"></span>Procesando...</span>
             ) : (
-              "INICIAR SESIÓN"
+              isRegistering ? "CREAR CUENTA" : "INICIAR SESIÓN"
             )}
           </button>
         </form>
@@ -169,9 +171,7 @@ function Login({ onLogin }) {
         {/* Switch Login/Registro */}
         <div className="text-center mt-3 pt-3 border-top border-secondary">
           <p className="mb-2 text-muted small">
-            {isRegistering
-              ? "¿Ya tienes una cuenta?"
-              : "¿No tienes cuenta aún?"}
+            {isRegistering ? "¿Ya tienes cuenta?" : "¿Eres nuevo aquí?"}
           </p>
           <button
             className="btn btn-outline-info btn-sm w-100"
