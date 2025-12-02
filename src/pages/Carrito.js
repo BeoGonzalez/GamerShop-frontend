@@ -1,70 +1,91 @@
 import React, { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom"; // Importamos hook de navegación
+import { useNavigate } from "react-router-dom";
 import "../Carrito.css";
 
 const API_URL = "https://gamershop-backend-1.onrender.com/api/producto";
 
 function Carrito() {
-  const navigate = useNavigate(); // Hook para redireccionar
+  const navigate = useNavigate();
 
-  // Estado para el catálogo de productos (Base de Datos)
+  // --- ESTADOS ---
   const [productos, setProductos] = useState([]);
+  const [loading, setLoading] = useState(false);
 
-  // Estado para el carrito del usuario
+  // Estado del carrito (persistencia en localStorage)
   const [carrito, setCarrito] = useState(() => {
     const saved = localStorage.getItem("user_cart");
     return saved ? JSON.parse(saved) : [];
   });
 
-  const [loading, setLoading] = useState(false);
+  // Estados para la Boleta Falsa
+  const [showReceipt, setShowReceipt] = useState(false);
+  const [lastOrder, setLastOrder] = useState(null);
 
-  // 1. Cargar productos desde la Base de Datos al iniciar
-  useEffect(() => {
-    // Definimos la función DENTRO del useEffect para evitar warnings de ESLint
-    // que causan que el build de Vercel falle.
-    const fetchProductos = async () => {
-      setLoading(true);
-      try {
-        const token = localStorage.getItem("token");
-        const headers = token ? { Authorization: `Bearer ${token}` } : {};
+  // Función auxiliar para obtener Headers con Token
+  const getAuthHeaders = () => {
+    const token = localStorage.getItem("token");
+    return token
+      ? { "Content-Type": "application/json", Authorization: `Bearer ${token}` }
+      : {};
+  };
 
-        const response = await fetch(API_URL, { headers });
-        if (response.ok) {
-          const data = await response.json();
-          setProductos(data);
-        } else {
-          console.error("Error al cargar productos");
-        }
-      } catch (error) {
-        console.error("Error de conexión:", error);
-      } finally {
-        setLoading(false);
+  // 1. Cargar productos de la BD (Ahora traen el campo 'stock')
+  const fetchProductos = async () => {
+    setLoading(true);
+    try {
+      const headers = getAuthHeaders();
+      // Si hay token lo usamos, si no, hacemos petición pública (GET es permitido)
+      const config = headers.Authorization ? { headers } : {};
+
+      const response = await fetch(API_URL, config);
+      if (response.ok) {
+        const data = await response.json();
+        setProductos(data);
+      } else {
+        console.error("Error al cargar productos");
       }
-    };
+    } catch (error) {
+      console.error("Error de conexión:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
+  useEffect(() => {
     fetchProductos();
-  }, []); // Array vacío: solo se ejecuta al montar el componente
+  }, []);
 
-  // 2. Guardar carrito en LocalStorage cada vez que cambie
+  // 2. Guardar carrito en LocalStorage al cambiar
   useEffect(() => {
     localStorage.setItem("user_cart", JSON.stringify(carrito));
   }, [carrito]);
 
-  // --- LÓGICA DEL CRUD DEL CARRITO ---
+  // --- FUNCIONES DEL CARRITO ---
 
   const addToCart = (producto) => {
-    // Verificar sesión usando el TOKEN (consistente con tu Login)
     const token = localStorage.getItem("token");
-
     if (!token) {
       alert("🔐 Debes iniciar sesión para comprar");
-      navigate("/login"); // Redirección SPA correcta
+      navigate("/login");
+      return;
+    }
+
+    // --- VALIDACIÓN DE STOCK ---
+    // Verificamos cuánto tenemos ya en el carrito
+    const itemInCart = carrito.find((item) => item.id === producto.id);
+    const cantidadActual = itemInCart ? itemInCart.cantidad : 0;
+
+    // Obtenemos el stock real (si es undefined, asumimos 0)
+    const stockReal = producto.stock !== undefined ? producto.stock : 0;
+
+    // Si intentar agregar 1 más supera el stock real
+    if (cantidadActual + 1 > stockReal) {
+      alert(`❌ Stock insuficiente. Solo quedan ${stockReal} unidades.`);
       return;
     }
 
     setCarrito((prevCarrito) => {
       const itemExists = prevCarrito.find((item) => item.id === producto.id);
-
       if (itemExists) {
         return prevCarrito.map((item) =>
           item.id === producto.id
@@ -87,7 +108,19 @@ function Carrito() {
     setCarrito((prev) =>
       prev.map((item) => {
         if (item.id === id) {
-          const newQuantity = Math.max(1, item.cantidad + amount);
+          // Buscamos el stock máximo real desde la lista de productos
+          const productoReal = productos.find((p) => p.id === id);
+          const maxStock = productoReal ? productoReal.stock : 0;
+
+          const newQuantity = item.cantidad + amount;
+
+          // Validaciones
+          if (newQuantity < 1) return item; // No bajar de 1
+          if (newQuantity > maxStock) {
+            alert(`⚠️ No puedes llevar más de ${maxStock} unidades.`);
+            return item; // No subir más allá del stock
+          }
+
           return { ...item, cantidad: newQuantity };
         }
         return item;
@@ -100,19 +133,65 @@ function Carrito() {
     0
   );
 
+  // --- LÓGICA DE PAGO CONECTADA AL BACKEND ---
+  const handleCheckout = async () => {
+    if (carrito.length === 0) return;
+
+    try {
+      // 1. Enviar la petición de compra al Backend para restar stock
+      const response = await fetch(`${API_URL}/comprar`, {
+        method: "POST",
+        headers: getAuthHeaders(),
+        body: JSON.stringify(carrito), // Enviamos la lista de items
+      });
+
+      if (!response.ok) {
+        // Si el backend dice que no hay stock, mostramos el error
+        const errorText = await response.text();
+        throw new Error(errorText);
+      }
+
+      // 2. Si todo sale bien (Backend respondió 200 OK)
+
+      // Generamos los datos para la boleta visual
+      const orderData = {
+        id: Math.floor(Math.random() * 900000) + 100000,
+        fecha: new Date().toLocaleString(),
+        items: [...carrito],
+        total: total,
+      };
+
+      setLastOrder(orderData);
+
+      // 3. Limpiamos el carrito local
+      setCarrito([]);
+      localStorage.removeItem("user_cart");
+
+      // 4. Mostramos la boleta
+      setShowReceipt(true);
+
+      // 5. IMPORTANTE: Recargamos los productos para ver el stock actualizado en la pantalla
+      fetchProductos();
+    } catch (error) {
+      alert("❌ Error al procesar la compra: " + error.message);
+    }
+  };
+
   return (
-    <div className="gamer-container py-5">
+    <div className="gamer-container py-5 position-relative">
       <div className="container">
         <h1 className="text-center gamer-title mb-5">
           🛒 Tu <span className="highlight">Carrito Gamer</span>
         </h1>
 
         <div className="row g-5">
-          {/* CATÁLOGO (Izquierda) */}
+          {/* COLUMNA IZQUIERDA: CATÁLOGO */}
           <div className="col-lg-8">
             <h4 className="mb-4 text-info">🔥 Productos Disponibles</h4>
             {loading ? (
-              <div className="text-center text-light">Cargando arsenal...</div>
+              <div className="text-center text-light">
+                Cargando inventario...
+              </div>
             ) : (
               <div className="row g-3">
                 {productos.map((p) => (
@@ -129,11 +208,11 @@ function Carrito() {
             )}
           </div>
 
-          {/* RESUMEN (Derecha) */}
+          {/* COLUMNA DERECHA: RESUMEN CARRITO */}
           <div className="col-lg-4">
             <div
               className="gamer-panel sticky-top"
-              style={{ top: "20px", zIndex: 100 }}
+              style={{ top: "20px", zIndex: 90 }}
             >
               <div className="gamer-panel-header">
                 <h5>🛍️ Resumen de Compra</h5>
@@ -152,7 +231,7 @@ function Carrito() {
                           key={item.id}
                           className="list-group-item bg-transparent text-light border-secondary d-flex justify-content-between align-items-center px-0"
                         >
-                          <div style={{ maxWidth: "60%" }}>
+                          <div style={{ maxWidth: "55%" }}>
                             <h6 className="my-0 text-truncate">
                               {item.nombre}
                             </h6>
@@ -160,32 +239,22 @@ function Carrito() {
                               ${item.precio} x {item.cantidad}
                             </small>
                           </div>
-                          <div className="d-flex align-items-center gap-2">
-                            <div
-                              className="btn-group btn-group-sm"
-                              role="group"
-                            >
-                              <button
-                                className="btn btn-outline-secondary text-light"
-                                onClick={() => updateQuantity(item.id, -1)}
-                              >
-                                -
-                              </button>
-                              <button
-                                className="btn btn-outline-secondary text-light"
-                                disabled
-                              >
-                                {item.cantidad}
-                              </button>
-                              <button
-                                className="btn btn-outline-secondary text-light"
-                                onClick={() => updateQuantity(item.id, 1)}
-                              >
-                                +
-                              </button>
-                            </div>
+                          <div className="d-flex align-items-center gap-1">
                             <button
-                              className="btn btn-sm btn-danger"
+                              className="btn btn-sm btn-outline-secondary text-light"
+                              onClick={() => updateQuantity(item.id, -1)}
+                            >
+                              -
+                            </button>
+                            <span className="px-2">{item.cantidad}</span>
+                            <button
+                              className="btn btn-sm btn-outline-secondary text-light"
+                              onClick={() => updateQuantity(item.id, 1)}
+                            >
+                              +
+                            </button>
+                            <button
+                              className="btn btn-sm btn-danger ms-2"
                               onClick={() => removeFromCart(item.id)}
                             >
                               ×
@@ -200,8 +269,11 @@ function Carrito() {
                       <h3 className="text-info">${total}</h3>
                     </div>
 
-                    <button className="btn btn-gamer-primary w-100 mt-3">
-                      PROCEDER AL PAGO 💳
+                    <button
+                      className="btn btn-gamer-primary w-100 mt-3"
+                      onClick={handleCheckout}
+                    >
+                      PAGAR Y DESCONTAR STOCK 💳
                     </button>
                   </>
                 )}
@@ -210,24 +282,96 @@ function Carrito() {
           </div>
         </div>
       </div>
+
+      {/* --- MODAL DE BOLETA (OVERLAY) --- */}
+      {showReceipt && lastOrder && (
+        <div
+          className="position-fixed top-0 start-0 w-100 h-100 d-flex justify-content-center align-items-center"
+          style={{ backgroundColor: "rgba(0,0,0,0.9)", zIndex: 9999 }}
+        >
+          <div
+            className="gamer-panel p-4"
+            style={{
+              maxWidth: "500px",
+              width: "90%",
+              border: "2px solid #00f3ff",
+              boxShadow: "0 0 30px rgba(0, 243, 255, 0.3)",
+            }}
+          >
+            <div className="text-center mb-4">
+              <h1 className="display-4">✅</h1>
+              <h3 className="text-success">¡Compra Exitosa!</h3>
+              <p className="text-muted small">
+                Tu inventario ha sido actualizado.
+              </p>
+            </div>
+
+            <div
+              className="bg-dark p-3 rounded border border-secondary mb-4"
+              style={{ fontFamily: "'Courier New', monospace" }}
+            >
+              <div className="text-center border-bottom border-secondary pb-2 mb-2">
+                <h5 className="text-info m-0">GAMERSHOP RECEIPT</h5>
+                <small className="text-muted">ID: #{lastOrder.id}</small>
+              </div>
+
+              <div className="mb-3">
+                <small className="text-muted d-block">
+                  Fecha: {lastOrder.fecha}
+                </small>
+              </div>
+
+              <ul className="list-unstyled mb-3 border-bottom border-secondary pb-2">
+                {lastOrder.items.map((item, index) => (
+                  <li
+                    key={index}
+                    className="d-flex justify-content-between text-light small mb-1"
+                  >
+                    <span>
+                      {item.cantidad} x {item.nombre}
+                    </span>
+                    <span>${item.precio * item.cantidad}</span>
+                  </li>
+                ))}
+              </ul>
+
+              <div className="d-flex justify-content-between fw-bold text-white fs-5">
+                <span>TOTAL</span>
+                <span className="text-success">${lastOrder.total}</span>
+              </div>
+            </div>
+
+            <button
+              className="btn btn-outline-info w-100"
+              onClick={() => setShowReceipt(false)}
+            >
+              CERRAR Y SEGUIR COMPRANDO
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
 
-// Componente Card optimizado
+// Componente Card con visualización de STOCK
 function Card({ producto, onAddToCart }) {
-  // Delegamos toda la lógica de auth al padre (addToCart)
-  // Esto hace el código más limpio y centralizado
+  // Verificamos si hay stock (asumiendo que si stock es undefined o null es 0 por seguridad)
+  const stockDisponible = producto.stock !== undefined ? producto.stock : 0;
+  const sinStock = stockDisponible <= 0;
+
   return (
-    <div className="card h-100 text-center bg-dark border-secondary shadow-sm card-hover">
+    <div
+      className={`card h-100 text-center bg-dark border-secondary shadow-sm ${
+        sinStock ? "opacity-50" : ""
+      }`}
+    >
       <div
         className="card-img-top bg-secondary d-flex align-items-center justify-content-center text-light"
         style={{ height: "180px", objectFit: "cover" }}
       >
-        {/* Si tuvieras imagen: <img src={producto.imagen} ... /> */}
         <span className="h1">🎮</span>
       </div>
-
       <div className="card-body d-flex flex-column">
         <h5
           className="card-title text-light text-truncate"
@@ -235,16 +379,34 @@ function Card({ producto, onAddToCart }) {
         >
           {producto.nombre}
         </h5>
+
+        {/* INDICADOR DE STOCK */}
+        <div className="mb-2">
+          {sinStock ? (
+            <span className="badge bg-danger">AGOTADO</span>
+          ) : (
+            <span
+              className={`badge ${
+                stockDisponible < 5 ? "bg-warning text-dark" : "bg-success"
+              }`}
+            >
+              Stock: {stockDisponible}
+            </span>
+          )}
+        </div>
+
         <p className="card-text text-muted small text-truncate">
           {producto.categoria}
         </p>
+
         <div className="mt-auto">
           <p className="fw-bold text-info fs-5 mb-2">${producto.precio}</p>
           <button
             className="btn btn-success w-100 btn-sm"
             onClick={() => onAddToCart(producto)}
+            disabled={sinStock}
           >
-            Agregar +
+            {sinStock ? "Sin Stock" : "Agregar +"}
           </button>
         </div>
       </div>

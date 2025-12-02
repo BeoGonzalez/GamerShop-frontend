@@ -40,7 +40,7 @@ function Navbar({ isAuth, role, onLogout }) {
             {isAuth && (
               <li className="nav-item">
                 <Link className="nav-link" to="/carrito">
-                  Tienda
+                  Carrito
                 </Link>
               </li>
             )}
@@ -49,7 +49,7 @@ function Navbar({ isAuth, role, onLogout }) {
             {isAuth && role === "ADMIN" && (
               <li className="nav-item">
                 <Link className="nav-link text-warning fw-bold" to="/admin">
-                  ⚙️ Panel Admin
+                  Panel Admin
                 </Link>
               </li>
             )}
