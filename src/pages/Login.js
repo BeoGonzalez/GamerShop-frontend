@@ -25,13 +25,12 @@ function Login({ onLogin }) {
     const endpoint = isRegistering ? "/register" : "/login";
 
     // Preparar el cuerpo de la petición
-    // Si es login, no enviamos el rol. Si es registro, sí.
     const body = isRegistering
       ? { username, password, rol }
       : { username, password };
 
     try {
-      console.log(`Enviando petición a: ${API_AUTH}${endpoint}`);
+      console.log(`📡 Enviando petición a: ${API_AUTH}${endpoint}`);
 
       const response = await fetch(API_AUTH + endpoint, {
         method: 'POST',
@@ -39,51 +38,64 @@ function Login({ onLogin }) {
         body: JSON.stringify(body),
       });
 
+      console.log(`📥 Respuesta recibida. Status: ${response.status}`);
+
       // LEER LA RESPUESTA DE FORMA SEGURA
-      // El backend devuelve texto plano para registro y JSON para login.
-      // Leemos como texto primero para no romper el JSON.parse
       const dataText = await response.text();
       let data;
       try {
-        data = JSON.parse(dataText); // Intentamos convertir a JSON (Login)
+        data = JSON.parse(dataText);
       } catch {
-        data = dataText; // Si falla, es texto plano (Registro o Error simple)
+        data = dataText;
       }
 
       if (!response.ok) {
-        // Si hay error, lanzamos una excepción con el mensaje del servidor
-        throw new Error(typeof data === 'string' ? data : (data.message || "Error en la solicitud"));
+        // --- MEJORA DE DIAGNÓSTICO DE ERRORES ---
+        // Intentamos sacar el mensaje del backend. Si viene vacío, deducimos por el código HTTP.
+        let serverMessage = typeof data === 'string' && data.length > 0 ? data : (data?.message || "");
+
+        if (!serverMessage) {
+          if (response.status === 401) serverMessage = "Credenciales incorrectas (401).";
+          else if (response.status === 403) serverMessage = "Acceso prohibido (403).";
+          else if (response.status === 404) serverMessage = "Servicio no encontrado (404).";
+          else if (response.status === 500) serverMessage = "Error interno del servidor (500).";
+          else serverMessage = `Error desconocido (${response.status})`;
+        }
+
+        throw new Error(serverMessage);
       }
 
       // --- MANEJO DE ÉXITO ---
 
       if (isRegistering) {
-        // CASO 1: REGISTRO EXITOSO
         alert("✅ " + (typeof data === 'string' ? data : "Cuenta creada con éxito."));
-        setIsRegistering(false); // Cambiar a la vista de Login
-        setPassword(""); // Limpiar contraseña por seguridad
+        setIsRegistering(false); // Ir al Login
+        setPassword("");
         setError(null);
       } else {
-        // CASO 2: LOGIN EXITOSO
-        console.log("Login OK:", data);
+        console.log("✅ Login Exitoso:", data);
 
-        // Guardamos en LocalStorage
+        // Guardamos sesión
         localStorage.setItem("token", data.token);
         localStorage.setItem("rol", data.rol);
         localStorage.setItem("username", data.username);
 
-        // Actualizamos el estado global en App.js (Navbar, Rutas protegidas)
         if (onLogin) {
           onLogin(data.token, data.rol);
         }
 
-        // Redirigir al inicio
         navigate("/");
       }
 
     } catch (err) {
-      console.error("Error Auth:", err);
-      setError(err.message || "No se pudo conectar con el servidor.");
+      console.error("❌ Error Auth:", err);
+
+      // Diferenciar error de red vs error de lógica
+      if (err.message === "Failed to fetch") {
+        setError("⚠️ No se pudo conectar al servidor. Puede que se esté 'despertando' (espera 1 min) o sea un bloqueo CORS.");
+      } else {
+        setError(err.message);
+      }
     } finally {
       setLoading(false);
     }
@@ -108,7 +120,7 @@ function Login({ onLogin }) {
             <input
               className="form-control gamer-input"
               type="text"
-              placeholder="Ej: MasterChief"
+              placeholder="Ej: PlayerOne"
               value={username}
               onChange={(e) => setUsername(e.target.value)}
               required
@@ -129,7 +141,7 @@ function Login({ onLogin }) {
             />
           </div>
 
-          {/* Selector de Rol (Solo visible en Registro) */}
+          {/* Selector de Rol (Solo en Registro) */}
           {isRegistering && (
             <div className="mb-4 fade-in">
               <label className="gamer-label">Tipo de Cuenta</label>
@@ -138,19 +150,19 @@ function Login({ onLogin }) {
                 value={rol}
                 onChange={(e) => setRol(e.target.value)}
               >
-                <option value="USER">Jugador (Usuario Cliente)</option>
-                <option value="ADMIN">Game Master (Administrador)</option>
+                <option value="USER">Jugador (Cliente)</option>
+                <option value="ADMIN">Game Master (Admin)</option>
               </select>
               <small className="text-muted mt-1 d-block" style={{ fontSize: "0.8em" }}>
-                * Selecciona "Game Master" para gestionar el inventario.
+                * Elige "Game Master" para poder agregar/borrar productos.
               </small>
             </div>
           )}
 
-          {/* Mensaje de Error */}
+          {/* Mensaje de Error (Ahora más detallado) */}
           {error && (
             <div className="alert alert-danger bg-transparent text-danger border-danger p-2 text-center mb-3 small">
-              ❌ {error}
+              {error}
             </div>
           )}
 
@@ -161,7 +173,7 @@ function Login({ onLogin }) {
             disabled={loading}
           >
             {loading ? (
-              <span><span className="spinner-border spinner-border-sm me-2"></span>Procesando...</span>
+              <span><span className="spinner-border spinner-border-sm me-2"></span>Conectando...</span>
             ) : (
               isRegistering ? "CREAR CUENTA" : "INICIAR SESIÓN"
             )}
