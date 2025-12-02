@@ -232,7 +232,10 @@ function Carrito() {
                           className="list-group-item bg-transparent text-light border-secondary d-flex justify-content-between align-items-center px-0"
                         >
                           <div style={{ maxWidth: "55%" }}>
-                            <h6 className="my-0 text-truncate">
+                            <h6
+                              className="my-0 text-truncate"
+                              title={item.nombre}
+                            >
                               {item.nombre}
                             </h6>
                             <small className="text-muted">
