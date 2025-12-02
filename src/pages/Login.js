@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import "../Carrito.css"; // Estilos Gamer
 
@@ -16,6 +16,13 @@ function Login({ onLogin }) {
 
   // URL del Backend
   const API_AUTH = "https://gamershop-backend-1.onrender.com/auth";
+
+  // Limpiar cualquier sesión residual al cargar el componente
+  useEffect(() => {
+    localStorage.removeItem("token");
+    localStorage.removeItem("rol");
+    localStorage.removeItem("username");
+  }, []);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -51,12 +58,11 @@ function Login({ onLogin }) {
 
       if (!response.ok) {
         // --- MEJORA DE DIAGNÓSTICO DE ERRORES ---
-        // Intentamos sacar el mensaje del backend. Si viene vacío, deducimos por el código HTTP.
         let serverMessage = typeof data === 'string' && data.length > 0 ? data : (data?.message || "");
 
         if (!serverMessage) {
           if (response.status === 401) serverMessage = "Credenciales incorrectas (401).";
-          else if (response.status === 403) serverMessage = "Acceso prohibido (403).";
+          else if (response.status === 403) serverMessage = "Acceso prohibido (403). Revisa la configuración de seguridad del Backend.";
           else if (response.status === 404) serverMessage = "Servicio no encontrado (404).";
           else if (response.status === 500) serverMessage = "Error interno del servidor (500).";
           else serverMessage = `Error desconocido (${response.status})`;
@@ -90,7 +96,6 @@ function Login({ onLogin }) {
     } catch (err) {
       console.error("❌ Error Auth:", err);
 
-      // Diferenciar error de red vs error de lógica
       if (err.message === "Failed to fetch") {
         setError("⚠️ No se pudo conectar al servidor. Puede que se esté 'despertando' (espera 1 min) o sea un bloqueo CORS.");
       } else {
