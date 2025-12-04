@@ -5,7 +5,7 @@ import ProductoList from "../components/ProductoList";
 import "../Carrito.css";
 
 // URL de tu Backend en Render
-const API_URL = "https://gamershop-backend-1.onrender.com/api/producto";
+const API_URL = "https://gamershop-backend-1.onrender.com/auth";
 
 function AdminPanel() {
   const [productos, setProductos] = useState([]);
