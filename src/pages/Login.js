@@ -4,7 +4,7 @@ import { useNavigate, Link } from "react-router-dom";
 const Login = () => {
   // URL del Backend (Ajustar según entorno)
   // const API_URL = "http://localhost:8080/auth";
-  const API_URL = "https://tu-backend-en-render.onrender.com/auth";
+  const API_URL = "https://gamershop-backend-1.onrender.com";
 
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
