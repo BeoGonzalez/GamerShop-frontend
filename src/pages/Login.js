@@ -1,221 +1,238 @@
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import "../Carrito.css"; // Asegúrate de que los estilos existan
 
-function Login({ onLogin }) {
-  const navigate = useNavigate();
+const Login = () => {
+  // Estado para saber si estamos en Login o Registro
+  const [isLoginMode, setIsLoginMode] = useState(true);
 
-  // --- ESTADOS ---
-  const [isRegistering, setIsRegistering] = useState(false); // Alternar Login/Registro
+  // Estados del formulario
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
-  const [rol, setRol] = useState("USER"); // Por defecto USER
-
-  const [error, setError] = useState(null);
+  const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
-  // URL del Backend
-  const API_AUTH = "https://gamershop-backend-1.onrender.com/auth";
+  const navigate = useNavigate();
 
-  // Limpiar cualquier sesión residual al entrar a esta pantalla
-  useEffect(() => {
-    localStorage.removeItem("token");
-    localStorage.removeItem("rol");
-    localStorage.removeItem("username");
-  }, []);
+  // URL del Backend (CÁMBIALO POR TU URL DE RENDER CUANDO SUBAS A PRODUCCIÓN)
+  // Ejemplo producción: const API_URL = "https://tu-backend-en-render.com/auth";
+  const API_URL = "https://gamershop-backend-1.onrender.com";
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setError(null);
+    setError("");
     setLoading(true);
 
-    // Validación básica antes de enviar
-    if (!username.trim() || !password.trim()) {
-      setError("Por favor completa todos los campos.");
-      setLoading(false);
-      return;
-    }
-
-    const endpoint = isRegistering ? "/register" : "/login";
-
-    // Preparar el cuerpo de la petición
-    // Si es Login, NO enviamos el rol. Si es Registro, SÍ.
-    const body = isRegistering
-      ? { username, password, rol }
-      : { username, password };
+    const endpoint = isLoginMode ? `${API_URL}/login` : `${API_URL}/register`;
 
     try {
-      console.log(`📡 Enviando a: ${API_AUTH}${endpoint}`);
-
-      const response = await fetch(API_AUTH + endpoint, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(body),
+      const response = await fetch(endpoint, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ username, password }),
       });
 
-      // 1. LEER LA RESPUESTA (Puede ser JSON o Texto Plano)
-      const dataText = await response.text();
-      let data;
-      try {
-        data = JSON.parse(dataText); // Intentamos convertir a objeto JS
-      } catch {
-        data = dataText; // Si falla, es un mensaje de texto simple (ej: "Usuario creado")
-      }
-
-      // 2. MANEJO DE ERRORES HTTP
-      if (!response.ok) {
-        // Intentamos obtener el mensaje de error del backend
-        let errorMessage = typeof data === 'string' && data.length > 0 ? data : (data?.message || "");
-
-        // Si el backend no dio mensaje, deducimos por el código de estado
-        if (!errorMessage) {
-          if (response.status === 401) errorMessage = "Credenciales incorrectas.";
-          else if (response.status === 403) errorMessage = "Acceso prohibido (403). Revisa si tu usuario existe o el backend está bloqueando.";
-          else if (response.status === 404) errorMessage = "Servidor no encontrado (404).";
-          else if (response.status === 500) errorMessage = "Error interno del servidor (500).";
-          else errorMessage = `Error desconocido (${response.status})`;
+      if (isLoginMode) {
+        if (response.ok) {
+          const token = await response.text();
+          localStorage.setItem("jwt_token", token);
+          // Redirigir al dashboard o home
+          navigate("/dashboard");
+        } else {
+          setError("Credenciales incorrectas");
         }
-
-        throw new Error(errorMessage);
-      }
-
-      // 3. MANEJO DE ÉXITO
-      if (isRegistering) {
-        // --- REGISTRO EXITOSO ---
-        alert("✅ Cuenta creada con éxito. Ahora inicia sesión.");
-        setIsRegistering(false); // Cambiar visualmente a Login
-        setPassword(""); // Limpiar contraseña
-        setError(null);
       } else {
-        // --- LOGIN EXITOSO ---
-        console.log("✅ Login OK:", data);
-
-        // Guardamos en LocalStorage
-        localStorage.setItem("token", data.token);
-        localStorage.setItem("rol", data.rol);
-        localStorage.setItem("username", data.username);
-
-        // Notificar a App.js
-        if (onLogin) {
-          onLogin(data.token, data.rol);
+        // Modo Registro
+        if (response.ok) {
+          alert("Registro exitoso! Ahora inicia sesión.");
+          setIsLoginMode(true); // Cambiar a pestaña de login
+          setPassword(""); // Limpiar contraseña por seguridad
+        } else {
+          setError("El usuario ya existe o hubo un error.");
         }
-
-        // Redirección inteligente
-        navigate("/");
       }
-
     } catch (err) {
-      console.error("❌ Error Auth:", err);
-
-      if (err.message === "Failed to fetch") {
-        setError("⚠️ No hay conexión con el servidor. Puede que Render se esté 'despertando' (espera 1 min) o sea un bloqueo CORS.");
-      } else {
-        setError(err.message);
-      }
+      setError("Error de conexión con el servidor");
+      console.error(err);
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div className="gamer-container d-flex justify-content-center align-items-center" style={{ minHeight: "80vh" }}>
-      <div className="gamer-panel p-4 p-md-5 fade-in-up" style={{ maxWidth: "450px", width: "100%" }}>
-
-        <h2 className="text-center gamer-title mb-4">
-          {isRegistering ? (
-            <>NUEVO <span className="highlight">JUGADOR</span></>
-          ) : (
-            <>ACCESO <span className="highlight">SISTEMA</span></>
-          )}
-        </h2>
-
-        <form onSubmit={handleSubmit}>
-          {/* Input Usuario */}
-          <div className="mb-3">
-            <label className="gamer-label">Nombre de Usuario</label>
-            <input
-              className="form-control gamer-input"
-              type="text"
-              placeholder="Ej: PlayerOne"
-              value={username}
-              onChange={(e) => setUsername(e.target.value)}
-              required
-              autoFocus
-            />
-          </div>
-
-          {/* Input Contraseña */}
-          <div className="mb-4">
-            <label className="gamer-label">Contraseña</label>
-            <input
-              className="form-control gamer-input"
-              type="password"
-              placeholder="••••••••"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              required
-            />
-          </div>
-
-          {/* Selector de Rol (Solo visible en Registro) */}
-          {isRegistering && (
-            <div className="mb-4 p-3 border border-secondary rounded bg-dark fade-in">
-              <label className="gamer-label mb-2 text-warning">Selecciona tu Rol</label>
-              <select
-                className="form-select bg-dark text-white border-secondary"
-                value={rol}
-                onChange={(e) => setRol(e.target.value)}
-              >
-                <option value="USER">👤 Cliente (Comprar)</option>
-                <option value="ADMIN">🛠️ Game Master (Administrar)</option>
-              </select>
-              <small className="text-muted mt-2 d-block" style={{ fontSize: "0.8em" }}>
-                * Selecciona "Game Master" si necesitas agregar o borrar productos.
-              </small>
-            </div>
-          )}
-
-          {/* Mensaje de Error */}
-          {error && (
-            <div className="alert alert-danger bg-transparent text-danger border-danger p-2 text-center mb-3">
-              <small><strong>Error:</strong> {error}</small>
-            </div>
-          )}
-
-          {/* Botón de Acción */}
+    <div style={styles.container}>
+      <div style={styles.card}>
+        {/* Encabezado con pestañas */}
+        <div style={styles.header}>
           <button
-            className="btn btn-gamer-primary w-100 py-2 fw-bold mb-3 shadow-sm"
-            type="submit"
-            disabled={loading}
-          >
-            {loading ? (
-              <span><span className="spinner-border spinner-border-sm me-2"></span>Procesando...</span>
-            ) : (
-              isRegistering ? "CREAR CUENTA" : "INICIAR SESIÓN"
-            )}
-          </button>
-        </form>
-
-        {/* Switch Login/Registro */}
-        <div className="text-center mt-3 pt-3 border-top border-secondary">
-          <p className="mb-2 text-muted small">
-            {isRegistering ? "¿Ya tienes una cuenta?" : "¿Eres nuevo en GamerShop?"}
-          </p>
-          <button
-            className="btn btn-outline-info btn-sm w-100"
+            style={isLoginMode ? styles.activeTab : styles.inactiveTab}
             onClick={() => {
-              setIsRegistering(!isRegistering);
-              setError(null);
-              setUsername("");
-              setPassword("");
+              setIsLoginMode(true);
+              setError("");
             }}
           >
-            {isRegistering ? "Volver al Login" : "Crear Cuenta Nueva"}
+            Iniciar Sesión
           </button>
+          <button
+            style={!isLoginMode ? styles.activeTab : styles.inactiveTab}
+            onClick={() => {
+              setIsLoginMode(false);
+              setError("");
+            }}
+          >
+            Registrarse
+          </button>
+        </div>
+
+        {/* Formulario */}
+        <div style={styles.formContainer}>
+          <h2 style={styles.title}>
+            {isLoginMode ? "Bienvenido de nuevo" : "Crea tu cuenta"}
+          </h2>
+
+          <form onSubmit={handleSubmit} style={styles.form}>
+            <div style={styles.inputGroup}>
+              <label style={styles.label}>Usuario</label>
+              <input
+                type="text"
+                value={username}
+                onChange={(e) => setUsername(e.target.value)}
+                required
+                style={styles.input}
+                placeholder="Ej: gamer123"
+              />
+            </div>
+
+            <div style={styles.inputGroup}>
+              <label style={styles.label}>Contraseña</label>
+              <input
+                type="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                required
+                style={styles.input}
+                placeholder="******"
+              />
+            </div>
+
+            {error && <p style={styles.error}>{error}</p>}
+
+            <button
+              type="submit"
+              disabled={loading}
+              style={loading ? styles.buttonDisabled : styles.button}
+            >
+              {loading
+                ? "Procesando..."
+                : isLoginMode
+                ? "Entrar"
+                : "Registrarse"}
+            </button>
+          </form>
         </div>
       </div>
     </div>
   );
-}
+};
+
+// Estilos CSS-in-JS para que no tengas que crear un archivo CSS aparte
+const styles = {
+  container: {
+    display: "flex",
+    justifyContent: "center",
+    alignItems: "center",
+    height: "100vh",
+    backgroundColor: "#f0f2f5",
+    fontFamily: "'Segoe UI', Tahoma, Geneva, Verdana, sans-serif",
+  },
+  card: {
+    backgroundColor: "white",
+    borderRadius: "12px",
+    boxShadow: "0 4px 20px rgba(0,0,0,0.1)",
+    width: "100%",
+    maxWidth: "400px",
+    overflow: "hidden",
+  },
+  header: {
+    display: "flex",
+    borderBottom: "1px solid #eee",
+  },
+  activeTab: {
+    flex: 1,
+    padding: "15px",
+    border: "none",
+    backgroundColor: "white",
+    color: "#6366f1", // Color Indigo
+    fontWeight: "bold",
+    cursor: "pointer",
+    borderBottom: "2px solid #6366f1",
+  },
+  inactiveTab: {
+    flex: 1,
+    padding: "15px",
+    border: "none",
+    backgroundColor: "#f9fafb",
+    color: "#6b7280",
+    cursor: "pointer",
+  },
+  formContainer: {
+    padding: "30px",
+  },
+  title: {
+    textAlign: "center",
+    marginBottom: "20px",
+    color: "#1f2937",
+    fontSize: "1.5rem",
+  },
+  form: {
+    display: "flex",
+    flexDirection: "column",
+    gap: "15px",
+  },
+  inputGroup: {
+    display: "flex",
+    flexDirection: "column",
+    textAlign: "left",
+  },
+  label: {
+    marginBottom: "5px",
+    fontSize: "0.9rem",
+    color: "#4b5563",
+  },
+  input: {
+    padding: "10px",
+    borderRadius: "6px",
+    border: "1px solid #d1d5db",
+    fontSize: "1rem",
+    outline: "none",
+    transition: "border-color 0.2s",
+  },
+  button: {
+    padding: "12px",
+    borderRadius: "6px",
+    border: "none",
+    backgroundColor: "#6366f1",
+    color: "white",
+    fontSize: "1rem",
+    fontWeight: "bold",
+    cursor: "pointer",
+    marginTop: "10px",
+    transition: "background-color 0.2s",
+  },
+  buttonDisabled: {
+    padding: "12px",
+    borderRadius: "6px",
+    border: "none",
+    backgroundColor: "#a5a6f6",
+    color: "white",
+    cursor: "not-allowed",
+    marginTop: "10px",
+  },
+  error: {
+    color: "#ef4444",
+    fontSize: "0.9rem",
+    textAlign: "center",
+    margin: "0",
+  },
+};
 
 export default Login;
