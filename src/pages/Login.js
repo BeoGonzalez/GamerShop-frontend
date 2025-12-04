@@ -1,10 +1,11 @@
 import React, { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
+import axios from "axios";
 
 const Login = () => {
   // -------------------------------------------------------------------
-  // ⚠️ IMPORTANTE: PEGA AQUÍ LA URL DE TU BACKEND EN RENDER ⚠️
-  // Ejemplo: "https://gamershop-backend.onrender.com/auth"
+  // ⚠️ URL DEL BACKEND
+  // Asegúrate de que coincida con tu despliegue en Render
   // -------------------------------------------------------------------
   const API_URL = "https://gamershop-backend.onrender.com/auth";
 
@@ -19,34 +20,45 @@ const Login = () => {
     setError("");
     setLoading(true);
 
-    // Validación de seguridad por si olvidaste cambiar la URL
-    if (API_URL.includes("https://gamershop-backend.onrender.com/auth")) {
-      setError("Error: Falta configurar la URL del backend en el código.");
-      setLoading(false);
-      return;
-    }
-
     try {
-      const response = await fetch(`${API_URL}/login`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ username, password }),
+      // 1. Petición POST al endpoint "/login"
+      // Tu controlador Java espera un objeto AuthRequest (JSON con username y password)
+      const response = await axios.post(`${API_URL}/login`, {
+        username: username,
+        password: password,
       });
 
-      if (response.ok) {
-        const token = await response.text();
-        // Guardar token y usuario en el navegador
-        localStorage.setItem("jwt_token", token);
-        localStorage.setItem("username", username);
-        // Redirigir a la página principal
-        navigate("/");
-      } else {
-        // Si el backend devuelve error (401/403)
-        setError("Usuario o contraseña incorrectos.");
-      }
+      // 2. Éxito
+      // Tu controlador devuelve: ResponseEntity.ok(jwt);
+      // Al ser texto plano (String), Axios lo coloca directamente en response.data
+      const token = response.data;
+
+      // Guardamos el token y el nombre de usuario para usarlos en la app
+      localStorage.setItem("jwt_token", token);
+      localStorage.setItem("username", username);
+
+      // Redirigir a la página principal (Home)
+      navigate("/");
     } catch (err) {
       console.error(err);
-      setError("No se pudo conectar con el servidor.");
+
+      // 3. Manejo de Errores basado en tu AuthController
+      if (err.response) {
+        // Tu controlador captura BadCredentialsException y devuelve status 401
+        if (err.response.status === 401) {
+          // Muestra el mensaje que envía el backend ("Credenciales incorrectas") o uno por defecto
+          setError(err.response.data || "Credenciales incorrectas.");
+        } else {
+          setError(`Error del servidor: ${err.response.status}`);
+        }
+      } else if (err.request) {
+        // El servidor no respondió (puede estar caído o "dormido" en Render)
+        setError(
+          "No se pudo conectar con el servidor. Puede que se esté despertando, intenta de nuevo."
+        );
+      } else {
+        setError("Ocurrió un error inesperado al procesar la solicitud.");
+      }
     } finally {
       setLoading(false);
     }
@@ -95,18 +107,18 @@ const Login = () => {
             type="submit"
             disabled={loading}
             className={`
-                            p-3.5 rounded-lg border-none font-bold text-white text-base mt-2 transition-colors cursor-pointer
-                            ${
-                              loading
-                                ? "bg-indigo-900 text-gray-400 cursor-not-allowed"
-                                : "bg-indigo-600 hover:bg-indigo-700"
-                            }
-                        `}
+                p-3.5 rounded-lg border-none font-bold text-white text-base mt-2 transition-colors cursor-pointer
+                ${
+                  loading
+                    ? "bg-indigo-900 text-gray-400 cursor-not-allowed"
+                    : "bg-indigo-600 hover:bg-indigo-700"
+                }
+            `}
           >
             {loading ? "Verificando..." : "ENTRAR"}
           </button>
 
-          {/* Caja de Error (Solo aparece si hay error) */}
+          {/* Caja de Error (Solo visible si hay error) */}
           {error && (
             <div className="mt-2 p-3 bg-red-900/20 border border-red-500/50 rounded-lg flex items-center justify-center gap-2 animate-pulse">
               <span className="text-lg">⚠️</span>
@@ -115,7 +127,7 @@ const Login = () => {
           )}
         </form>
 
-        {/* Footer / Links */}
+        {/* Footer / Enlace a Registro */}
         <div className="mt-6 text-center border-t border-gray-700 pt-6">
           <p className="text-gray-400 text-sm mb-1">¿No tienes cuenta?</p>
           <Link
