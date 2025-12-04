@@ -2,12 +2,9 @@ import React, { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import axios from "axios";
 
-const Login = () => {
-  // -------------------------------------------------------------------
-  // ⚠️ URL DEL BACKEND
-  // Asegúrate de que coincida con tu despliegue en Render
-  // -------------------------------------------------------------------
-  const API_URL = "https://gamershop-backend.onrender.com/auth";
+// Recibimos la prop 'onLoginSuccess' desde App.js
+const Login = ({ onLoginSuccess }) => {
+  const API_URL = "https://gamershop-backend-1.onrender.com/auth";
 
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
@@ -21,43 +18,36 @@ const Login = () => {
     setLoading(true);
 
     try {
-      // 1. Petición POST al endpoint "/login"
-      // Tu controlador Java espera un objeto AuthRequest (JSON con username y password)
+      // 1. Petición al Backend
       const response = await axios.post(`${API_URL}/login`, {
         username: username,
         password: password,
       });
 
-      // 2. Éxito
-      // Tu controlador devuelve: ResponseEntity.ok(jwt);
-      // Al ser texto plano (String), Axios lo coloca directamente en response.data
+      // 2. Guardar Token y Usuario en el navegador
       const token = response.data;
-
-      // Guardamos el token y el nombre de usuario para usarlos en la app
       localStorage.setItem("jwt_token", token);
       localStorage.setItem("username", username);
 
-      // Redirigir a la página principal (Home)
+      // 3. ¡IMPORTANTE! Avisar a App.js que el login fue exitoso
+      if (onLoginSuccess) {
+        onLoginSuccess(username);
+      }
+
+      // 4. Redirigir al Home
       navigate("/");
     } catch (err) {
       console.error(err);
-
-      // 3. Manejo de Errores basado en tu AuthController
       if (err.response) {
-        // Tu controlador captura BadCredentialsException y devuelve status 401
         if (err.response.status === 401) {
-          // Muestra el mensaje que envía el backend ("Credenciales incorrectas") o uno por defecto
           setError(err.response.data || "Credenciales incorrectas.");
         } else {
           setError(`Error del servidor: ${err.response.status}`);
         }
       } else if (err.request) {
-        // El servidor no respondió (puede estar caído o "dormido" en Render)
-        setError(
-          "No se pudo conectar con el servidor. Puede que se esté despertando, intenta de nuevo."
-        );
+        setError("No se pudo conectar con el servidor. Intenta de nuevo.");
       } else {
-        setError("Ocurrió un error inesperado al procesar la solicitud.");
+        setError("Ocurrió un error inesperado.");
       }
     } finally {
       setLoading(false);
@@ -65,77 +55,85 @@ const Login = () => {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-900 font-sans p-4">
-      <div className="bg-gray-800 p-8 rounded-2xl shadow-2xl w-full max-w-sm border border-gray-700">
-        <h2 className="text-center mb-8 text-3xl font-semibold text-gray-100">
-          Iniciar Sesión
-        </h2>
+    <div className="d-flex justify-content-center align-items-center min-vh-100 bg-dark">
+      <div
+        className="card p-4 shadow-lg text-white"
+        style={{
+          width: "100%",
+          maxWidth: "400px",
+          backgroundColor: "#212529",
+          border: "1px solid #495057",
+        }}
+      >
+        <div className="card-body">
+          <h2 className="text-center mb-4 fw-bold">Iniciar Sesión</h2>
 
-        <form onSubmit={handleLogin} className="flex flex-col gap-5">
-          {/* Input Usuario */}
-          <div className="flex flex-col text-left">
-            <label className="mb-2 text-gray-300 font-medium text-sm">
-              Usuario
-            </label>
-            <input
-              type="text"
-              value={username}
-              onChange={(e) => setUsername(e.target.value)}
-              required
-              className="p-3 rounded-lg border border-gray-600 bg-gray-700 text-white text-base focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-all placeholder-gray-500"
-              placeholder="Tu usuario"
-            />
-          </div>
-
-          {/* Input Contraseña */}
-          <div className="flex flex-col text-left">
-            <label className="mb-2 text-gray-300 font-medium text-sm">
-              Contraseña
-            </label>
-            <input
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              required
-              className="p-3 rounded-lg border border-gray-600 bg-gray-700 text-white text-base focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-all placeholder-gray-500"
-              placeholder="********"
-            />
-          </div>
-
-          {/* Botón Entrar */}
-          <button
-            type="submit"
-            disabled={loading}
-            className={`
-                p-3.5 rounded-lg border-none font-bold text-white text-base mt-2 transition-colors cursor-pointer
-                ${
-                  loading
-                    ? "bg-indigo-900 text-gray-400 cursor-not-allowed"
-                    : "bg-indigo-600 hover:bg-indigo-700"
-                }
-            `}
-          >
-            {loading ? "Verificando..." : "ENTRAR"}
-          </button>
-
-          {/* Caja de Error (Solo visible si hay error) */}
-          {error && (
-            <div className="mt-2 p-3 bg-red-900/20 border border-red-500/50 rounded-lg flex items-center justify-center gap-2 animate-pulse">
-              <span className="text-lg">⚠️</span>
-              <p className="text-red-300 text-sm font-bold m-0">{error}</p>
+          <form onSubmit={handleLogin}>
+            <div className="mb-3 text-start">
+              <label className="form-label text-light">Usuario</label>
+              <input
+                type="text"
+                className="form-control bg-secondary text-white border-0"
+                value={username}
+                onChange={(e) => setUsername(e.target.value)}
+                required
+                placeholder="Tu usuario"
+              />
             </div>
-          )}
-        </form>
 
-        {/* Footer / Enlace a Registro */}
-        <div className="mt-6 text-center border-t border-gray-700 pt-6">
-          <p className="text-gray-400 text-sm mb-1">¿No tienes cuenta?</p>
-          <Link
-            to="/register"
-            className="text-indigo-400 font-bold hover:text-indigo-300 transition-colors no-underline"
-          >
-            Regístrate aquí
-          </Link>
+            <div className="mb-4 text-start">
+              <label className="form-label text-light">Contraseña</label>
+              <input
+                type="password"
+                className="form-control bg-secondary text-white border-0"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                required
+                placeholder="********"
+              />
+            </div>
+
+            <div className="d-grid gap-2">
+              <button
+                type="submit"
+                disabled={loading}
+                className="btn btn-primary fw-bold py-2"
+              >
+                {loading ? (
+                  <>
+                    <span
+                      className="spinner-border spinner-border-sm me-2"
+                      role="status"
+                      aria-hidden="true"
+                    ></span>
+                    Verificando...
+                  </>
+                ) : (
+                  "ENTRAR"
+                )}
+              </button>
+            </div>
+
+            {error && (
+              <div
+                className="alert alert-danger mt-3 d-flex align-items-center p-2"
+                role="alert"
+              >
+                <span className="fs-5 me-2">⚠️</span>
+                <div className="small fw-bold">{error}</div>
+              </div>
+            )}
+          </form>
+
+          <div className="mt-4 text-center border-top border-secondary pt-3">
+            <p className="text-muted small mb-1">¿No tienes cuenta?</p>
+            <Link
+              to="/registro"
+              className="text-decoration-none fw-bold text-info"
+            >
+              Regístrate aquí
+            </Link>
+          </div>
         </div>
       </div>
     </div>
