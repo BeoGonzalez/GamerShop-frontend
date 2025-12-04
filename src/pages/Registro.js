@@ -3,15 +3,13 @@ import { useNavigate, Link } from "react-router-dom";
 import axios from "axios";
 
 const Registro = () => {
-  // -------------------------------------------------------------------
-  // ⚠️ URL DEL BACKEND
-  // -------------------------------------------------------------------
   const API_URL = "https://gamershop-backend-1.onrender.com/auth";
 
-  // Estados para el formulario
+  // 1. Agregamos 'role' al estado inicial, por defecto 'USER'
   const [formData, setFormData] = useState({
     username: "",
     password: "",
+    role: "USER",
   });
 
   const [error, setError] = useState("");
@@ -19,7 +17,6 @@ const Registro = () => {
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
 
-  // Función para capturar lo que el usuario escribe
   const handleChange = (e) => {
     setFormData({
       ...formData,
@@ -27,7 +24,6 @@ const Registro = () => {
     });
   };
 
-  // Función al enviar el formulario
   const handleRegister = async (e) => {
     e.preventDefault();
     setError("");
@@ -35,31 +31,25 @@ const Registro = () => {
     setLoading(true);
 
     try {
-      // 1. Petición POST al endpoint "/registro"
+      // Axios enviará: { username: "...", password: "...", role: "ADMIN" }
       await axios.post(`${API_URL}/registro`, formData);
 
-      // 2. Éxito
       setSuccess("¡Cuenta creada exitosamente! Redirigiendo...");
-
-      // Esperamos 1.5 segundos y enviamos al usuario al Login
       setTimeout(() => {
         navigate("/login");
       }, 1500);
     } catch (err) {
       console.error(err);
-
-      // 3. Manejo de Errores
       if (err.response) {
-        // Conflicto (Usuario ya existe) o Error Interno
         if (err.response.status === 409 || err.response.status === 500) {
-          setError("Error: El nombre de usuario ya está en uso.");
+          setError("Error: El usuario ya existe.");
         } else if (err.response.status === 400) {
-          setError("Datos inválidos. Intenta con otra contraseña.");
+          setError("Datos inválidos.");
         } else {
-          setError(`Error al registrar: ${err.response.status}`);
+          setError(`Error: ${err.response.status}`);
         }
       } else if (err.request) {
-        setError("No se pudo conectar con el servidor. Revisa tu internet.");
+        setError("No se pudo conectar con el servidor.");
       } else {
         setError("Ocurrió un error inesperado.");
       }
@@ -69,9 +59,7 @@ const Registro = () => {
   };
 
   return (
-    // Contenedor principal: Fondo oscuro y centrado perfecto
     <div className="d-flex justify-content-center align-items-center min-vh-100 bg-dark">
-      {/* Tarjeta */}
       <div
         className="card p-4 shadow-lg text-white"
         style={{
@@ -85,7 +73,7 @@ const Registro = () => {
           <h2 className="text-center mb-4 fw-bold">Crear Cuenta</h2>
 
           <form onSubmit={handleRegister}>
-            {/* Campo: Usuario */}
+            {/* Input Usuario */}
             <div className="mb-3 text-start">
               <label className="form-label text-light">Usuario</label>
               <input
@@ -95,12 +83,12 @@ const Registro = () => {
                 value={formData.username}
                 onChange={handleChange}
                 required
-                placeholder="Elige un nombre de usuario"
+                placeholder="Elige un usuario"
               />
             </div>
 
-            {/* Campo: Contraseña */}
-            <div className="mb-4 text-start">
+            {/* Input Contraseña */}
+            <div className="mb-3 text-start">
               <label className="form-label text-light">Contraseña</label>
               <input
                 type="password"
@@ -113,7 +101,24 @@ const Registro = () => {
               />
             </div>
 
-            {/* Botón de Registro */}
+            {/* --- NUEVO: SELECTOR DE ROL --- */}
+            <div className="mb-4 text-start">
+              <label className="form-label text-light">Tipo de Cuenta</label>
+              <select
+                name="role"
+                className="form-select bg-secondary text-white border-0"
+                value={formData.role}
+                onChange={handleChange}
+              >
+                <option value="USER">Jugador (Usuario Normal)</option>
+                <option value="ADMIN">Comandante (Administrador)</option>
+              </select>
+              <div className="form-text text-muted">
+                * Selecciona "Comandante" para acceder al Panel Admin.
+              </div>
+            </div>
+
+            {/* Botón Registrar */}
             <div className="d-grid gap-2">
               <button
                 type="submit"
@@ -127,7 +132,7 @@ const Registro = () => {
                       role="status"
                       aria-hidden="true"
                     ></span>
-                    Creando cuenta...
+                    Creando...
                   </>
                 ) : (
                   "REGISTRARSE"
@@ -135,7 +140,7 @@ const Registro = () => {
               </button>
             </div>
 
-            {/* Mensajes de Feedback */}
+            {/* Mensajes */}
             {error && (
               <div
                 className="alert alert-danger mt-3 d-flex align-items-center p-2"
@@ -157,7 +162,6 @@ const Registro = () => {
             )}
           </form>
 
-          {/* Pie de la tarjeta */}
           <div className="mt-4 text-center border-top border-secondary pt-3">
             <p className="text-muted small mb-1">¿Ya tienes cuenta?</p>
             <Link
