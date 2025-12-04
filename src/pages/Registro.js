@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 
-const Login = () => {
+const Registro = () => {
   // URL del Backend (Ajustar según entorno)
   // const API_URL = "http://localhost:8080/auth";
   const API_URL = "https://tu-backend-en-render.onrender.com/auth";
@@ -12,26 +12,26 @@ const Login = () => {
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
 
-  const handleLogin = async (e) => {
+  const handleRegister = async (e) => {
     e.preventDefault();
     setError("");
     setLoading(true);
 
     try {
-      const response = await fetch(`${API_URL}/login`, {
+      const response = await fetch(`${API_URL}/register`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ username, password }),
       });
 
       if (response.ok) {
-        const token = await response.text();
-        localStorage.setItem("jwt_token", token);
-        localStorage.setItem("username", username);
-        console.log("Login exitoso");
-        navigate("/dashboard");
+        alert("¡Registro exitoso! Ahora inicia sesión.");
+        navigate("/login"); // Redirige al login tras registrarse
       } else {
-        setError("Usuario o contraseña incorrectos.");
+        const errorText = await response.text();
+        setError(
+          errorText || "Error al registrar. El usuario quizás ya existe."
+        );
       }
     } catch (err) {
       console.error(err);
@@ -44,23 +44,23 @@ const Login = () => {
   return (
     <div style={styles.container}>
       <div style={styles.card}>
-        <h2 style={styles.title}>Iniciar Sesión</h2>
+        <h2 style={styles.title}>Crear Cuenta</h2>
 
-        <form onSubmit={handleLogin} style={styles.form}>
+        <form onSubmit={handleRegister} style={styles.form}>
           <div style={styles.inputGroup}>
-            <label style={styles.label}>Usuario</label>
+            <label style={styles.label}>Elige un Usuario</label>
             <input
               type="text"
               value={username}
               onChange={(e) => setUsername(e.target.value)}
               required
               style={styles.input}
-              placeholder="Tu usuario"
+              placeholder="Usuario nuevo"
             />
           </div>
 
           <div style={styles.inputGroup}>
-            <label style={styles.label}>Contraseña</label>
+            <label style={styles.label}>Elige una Contraseña</label>
             <input
               type="password"
               value={password}
@@ -78,14 +78,14 @@ const Login = () => {
             disabled={loading}
             style={loading ? styles.buttonDisabled : styles.button}
           >
-            {loading ? "Cargando..." : "ENTRAR"}
+            {loading ? "Registrando..." : "REGISTRARSE"}
           </button>
         </form>
 
         <div style={styles.footer}>
-          <p style={styles.text}>¿No tienes cuenta?</p>
-          <Link to="/register" style={styles.link}>
-            Regístrate aquí
+          <p style={styles.text}>¿Ya tienes cuenta?</p>
+          <Link to="/login" style={styles.link}>
+            Inicia Sesión aquí
           </Link>
         </div>
       </div>
@@ -93,7 +93,7 @@ const Login = () => {
   );
 };
 
-// Estilos compartidos (puedes moverlos a un archivo CSS aparte si prefieres)
+// Reutilizamos los mismos estilos para consistencia visual
 const styles = {
   container: {
     display: "flex",
@@ -134,7 +134,7 @@ const styles = {
     padding: "14px",
     borderRadius: "8px",
     border: "none",
-    backgroundColor: "#4f46e5",
+    backgroundColor: "#10b981", // Verde para registro (diferente al login)
     color: "white",
     fontWeight: "bold",
     cursor: "pointer",
@@ -144,8 +144,8 @@ const styles = {
     padding: "14px",
     borderRadius: "8px",
     border: "none",
-    backgroundColor: "#4338ca",
-    color: "#9ca3af",
+    backgroundColor: "#059669",
+    color: "#d1fae5",
     cursor: "not-allowed",
     marginTop: "10px",
   },
@@ -160,4 +160,4 @@ const styles = {
   link: { color: "#818cf8", textDecoration: "none", fontWeight: "bold" },
 };
 
-export default Login;
+export default Registro;

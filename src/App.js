@@ -38,46 +38,16 @@ function App() {
   return (
     <BrowserRouter>
       <div className="d-flex flex-column min-vh-100">
-        {/* 3. Pasamos el estado al Navbar para que muestre/oculte enlaces */}
         <Navbar isAuth={!!token} role={rol} onLogout={handleLogout} />
-
         <main className="flex-grow-1">
           <Routes>
-            {/* --- RUTAS PÚBLICAS --- */}
             <Route path="/" element={<Home />} />
             <Route path="/categoria" element={<Categoria />} />
             <Route path="/contacto" element={<Contact />} />
-
-            {/* Login: Si ya está logueado, lo manda al home o donde prefieras */}
-            <Route
-              path="/login"
-              element={
-                !token ? <Login onLogin={handleLogin} /> : <Navigate to="/" />
-              }
-            />
-
-            {/* --- RUTAS PARA USUARIOS REGISTRADOS (Cualquier ROL) --- */}
-            <Route
-              element={
-                <ProtectedRoute isAllowed={!!token} redirectTo="/login" />
-              }
-            >
-              {/* Aquí pueden entrar Admins y Usuarios */}
-              <Route path="/carrito" element={<Carrito />} />
-            </Route>
-
-            {/* --- RUTA SOLO PARA ADMIN (AdminPanel) --- */}
-            <Route
-              element={
-                <ProtectedRoute
-                  isAllowed={!!token && rol === "ADMIN"}
-                  redirectTo="/"
-                />
-              }
-            >
-              {/* Solo entra si es ADMIN. Si falla, lo manda al Home */}
-              <Route path="/admin" element={<AdminPanel />} />
-            </Route>
+            <Route path="/carrito" element={<Carrito />} />
+            <Route path="/login" element={<Login />} />
+            <Route path="/register" element={<Register />} />
+            <Route path="/admin" element={<AdminPanel />} />
           </Routes>
         </main>
 
