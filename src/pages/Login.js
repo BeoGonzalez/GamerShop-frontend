@@ -24,23 +24,29 @@ const Login = ({ onLoginSuccess }) => {
         password: password,
       });
 
-      // 2. Guardar Token y Usuario en el navegador
-      const token = response.data;
+      console.log("RESPUESTA DEL BACKEND:", response.data);
+
+      // 2. CORRECCIÓN: Desempaquetar el JSON (Token + Rol)
+      // El backend devuelve: { "token": "...", "rol": "ADMIN", "username": "..." }
+      const { token, rol } = response.data;
+
+      // 3. Guardar TODO en localStorage
       localStorage.setItem("jwt_token", token);
       localStorage.setItem("username", username);
+      localStorage.setItem("rol", rol); // <--- Guardamos el rol real
 
-      // 3. ¡IMPORTANTE! Avisar a App.js que el login fue exitoso
+      // 4. ¡IMPORTANTE! Avisar a App.js con el rol incluido
       if (onLoginSuccess) {
-        onLoginSuccess(username);
+        onLoginSuccess(username, rol); // <--- Pasamos el rol para que el Navbar se actualice
       }
 
-      // 4. Redirigir al Home
+      // 5. Redirigir al Home
       navigate("/");
     } catch (err) {
       console.error(err);
       if (err.response) {
         if (err.response.status === 401) {
-          setError(err.response.data || "Credenciales incorrectas.");
+          setError("Credenciales incorrectas.");
         } else {
           setError(`Error del servidor: ${err.response.status}`);
         }
@@ -127,8 +133,9 @@ const Login = ({ onLoginSuccess }) => {
 
           <div className="mt-4 text-center border-top border-secondary pt-3">
             <p className="text-muted small mb-1">¿No tienes cuenta?</p>
+            {/* CORRECCIÓN: El link debe ser /register para coincidir con App.js */}
             <Link
-              to="/registro"
+              to="/register"
               className="text-decoration-none fw-bold text-info"
             >
               Regístrate aquí

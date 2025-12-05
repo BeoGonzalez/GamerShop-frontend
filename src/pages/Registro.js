@@ -5,12 +5,15 @@ import axios from "axios";
 const Registro = () => {
   const API_URL = "https://gamershop-backend-1.onrender.com/auth";
 
-  // 1. Agregamos 'role' al estado inicial, por defecto 'USER'
+  // Estados para el formulario (Datos que se envían al backend)
   const [formData, setFormData] = useState({
     username: "",
     password: "",
-    role: "USER",
+    rol: "USER",
   });
+
+  // Estado para la confirmación (Solo validación local, no se envía)
+  const [confirmPassword, setConfirmPassword] = useState("");
 
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
@@ -30,8 +33,15 @@ const Registro = () => {
     setSuccess("");
     setLoading(true);
 
+    // --- 1. VALIDACIÓN DE CONTRASEÑAS ---
+    if (formData.password !== confirmPassword) {
+      setError("❌ Las contraseñas no coinciden. Por favor verifícalas.");
+      setLoading(false); // Detenemos la carga
+      return; // 🛑 DETENEMOS LA EJECUCIÓN AQUÍ (No se envía nada al backend)
+    }
+
     try {
-      // Axios enviará: { username: "...", password: "...", role: "ADMIN" }
+      // Si pasan la validación, enviamos los datos
       await axios.post(`${API_URL}/registro`, formData);
 
       setSuccess("¡Cuenta creada exitosamente! Redirigiendo...");
@@ -98,16 +108,43 @@ const Registro = () => {
                 onChange={handleChange}
                 required
                 placeholder="********"
+                minLength={4} // Opcional: Validación HTML básica
               />
             </div>
 
-            {/* --- NUEVO: SELECTOR DE ROL --- */}
+            {/* --- NUEVO: INPUT CONFIRMAR CONTRASEÑA --- */}
+            <div className="mb-3 text-start">
+              <label className="form-label text-light">
+                Confirmar Contraseña
+              </label>
+              <input
+                type="password"
+                name="confirmPassword"
+                className={`form-control bg-secondary text-white border-0 ${
+                  confirmPassword && formData.password !== confirmPassword
+                    ? "is-invalid"
+                    : ""
+                }`}
+                value={confirmPassword}
+                onChange={(e) => setConfirmPassword(e.target.value)}
+                required
+                placeholder="Repite tu contraseña"
+              />
+              {/* Feedback visual inmediato (opcional) */}
+              {confirmPassword && formData.password !== confirmPassword && (
+                <div className="invalid-feedback text-warning">
+                  Las contraseñas no coinciden
+                </div>
+              )}
+            </div>
+
+            {/* Selector de Rol */}
             <div className="mb-4 text-start">
               <label className="form-label text-light">Tipo de Cuenta</label>
               <select
-                name="role"
+                name="rol"
                 className="form-select bg-secondary text-white border-0"
-                value={formData.role}
+                value={formData.rol}
                 onChange={handleChange}
               >
                 <option value="USER">Jugador (Usuario Normal)</option>
@@ -125,18 +162,7 @@ const Registro = () => {
                 disabled={loading}
                 className="btn btn-primary fw-bold py-2"
               >
-                {loading ? (
-                  <>
-                    <span
-                      className="spinner-border spinner-border-sm me-2"
-                      role="status"
-                      aria-hidden="true"
-                    ></span>
-                    Creando...
-                  </>
-                ) : (
-                  "REGISTRARSE"
-                )}
+                {loading ? "Creando..." : "REGISTRARSE"}
               </button>
             </div>
 

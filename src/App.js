@@ -16,55 +16,56 @@ import Registro from "./pages/Registro";
 
 function App() {
   const [isAuth, setIsAuth] = useState(false);
-  const [role, setRole] = useState("USER");
+  const [rol, setRol] = useState("USER");
+  const [username, setUsername] = useState(""); // NUEVO ESTADO PARA EL NOMBRE
 
-  // 1. Al cargar la app, verificamos si hay una sesión guardada
+  // 1. Al cargar, leemos todos los datos de la sesión
   useEffect(() => {
     const token = localStorage.getItem("jwt_token");
-    const username = localStorage.getItem("username");
+    // LEEMOS EL ROL GUARDADO QUE VIENE DEL BACKEND
+    const storedRol = localStorage.getItem("rol");
+    const storedUsername = localStorage.getItem("username"); // LEEMOS EL NOMBRE
 
     if (token) {
       setIsAuth(true);
-      // Lógica simple: Si el usuario es "admin", le damos rol de ADMIN
-      if (username === "admin") {
-        setRole("ADMIN");
-      } else {
-        setRole("USER");
-      }
+      // Si hay un rol guardado, lo usamos. Si no, por defecto USER.
+      setRol(storedRol || "USER");
+      setUsername(storedUsername || ""); // GUARDAMOS EL NOMBRE EN EL ESTADO
     } else {
       setIsAuth(false);
-      setRole("USER");
+      setRol("USER");
+      setUsername("");
     }
   }, []);
 
-  // 2. Función para actualizar el estado cuando el Login es exitoso
-  const handleLoginSuccess = (username) => {
+  // 2. Actualizamos el nombre al hacer login
+  const handleLoginSuccess = (user, userRol) => {
     setIsAuth(true);
-    if (username === "admin") {
-      setRole("ADMIN");
-    } else {
-      setRole("USER");
-    }
+    setRol(userRol); // Usamos el rol real que nos pasó el Login
+    setUsername(user); // ACTUALIZAMOS EL ESTADO
   };
 
-  // 3. Función para cerrar sesión
+  // 3. Limpiamos el nombre al salir
   const handleLogout = () => {
     localStorage.removeItem("jwt_token");
     localStorage.removeItem("username");
+    localStorage.removeItem("rol"); // Limpiamos también el rol
     setIsAuth(false);
-    setRole("USER");
+    setRol("USER");
+    setUsername(""); // LIMPIAMOS EL ESTADO
   };
+
   return (
     <BrowserRouter>
       <div className="d-flex flex-column min-vh-100">
-        {/* El Navbar es fixed-top, flota sobre todo */}
-        <Navbar isAuth={isAuth} role={role} onLogout={handleLogout} />
+        {/* PASAMOS 'username' AL NAVBAR */}
+        <Navbar
+          isAuth={isAuth}
+          role={rol}
+          username={username}
+          onLogout={handleLogout}
+        />
 
-        {/* SOLUCIÓN: 
-           Agregamos style={{ paddingTop: "80px" }} 
-           Esto baja el contenido para que el Navbar no lo tape.
-           Puedes ajustar el 80px si tu barra es más alta o más baja.
-        */}
         <main className="flex-grow-1" style={{ paddingTop: "80px" }}>
           <Routes>
             <Route path="/" element={<Home />} />
@@ -75,15 +76,13 @@ function App() {
               path="/login"
               element={<Login onLoginSuccess={handleLoginSuccess} />}
             />
-            <Route path="/registro" element={<Registro />} />
+            <Route path="/register" element={<Registro />} />
+
+            {/* Protección de ruta Admin basada en el rol real */}
             <Route
               path="/admin"
               element={
-                isAuth && role === "ADMIN" ? (
-                  <AdminPanel />
-                ) : (
-                  <Navigate to="/" />
-                )
+                isAuth && rol === "ADMIN" ? <AdminPanel /> : <Navigate to="/" />
               }
             />
           </Routes>

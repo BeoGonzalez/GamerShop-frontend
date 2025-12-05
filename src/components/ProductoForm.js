@@ -1,131 +1,128 @@
-import React, { useState, useRef } from "react";
+import React, { useState } from "react";
 
 function ProductoForm({ onGuardar }) {
-  // Estados del formulario
-  const [nombre, setNombre] = useState("");
-  const [categoria, setCategoria] = useState("");
-  const [precio, setPrecio] = useState("");
-  const [stock, setStock] = useState(""); // NUEVO: Estado para Stock
+  // Estado inicial del formulario
+  const [producto, setProducto] = useState({
+    nombre: "",
+    categoria: "",
+    precio: "",
+    stock: "",
+    imagen: "", // Agrego imagen por si tu modelo la tiene, si no, puedes quitarla
+  });
 
-  const inputRef = useRef(null);
-
-  const guardar = (e) => {
-    if (e) e.preventDefault();
-
-    // 1. Validar que todos los campos tengan datos
-    if (!nombre.trim() || !categoria.trim() || !precio || !stock) {
-      alert("⚠️ Faltan datos requeridos (incluyendo stock).");
-      return;
-    }
-
-    const precioEntero = parseInt(precio);
-    const stockEntero = parseInt(stock); // Convertir stock a número
-
-    // 2. Validaciones numéricas
-    if (isNaN(precioEntero) || precioEntero <= 0) {
-      alert("⚠️ Precio inválido. Debe ser mayor a 0.");
-      return;
-    }
-
-    if (isNaN(stockEntero) || stockEntero < 0) {
-      alert("⚠️ El stock no puede ser negativo.");
-      return;
-    }
-
-    // 3. Enviar objeto al Padre (AdminPanel)
-    onGuardar({
-      nombre: nombre.trim(),
-      categoria: categoria.trim(),
-      precio: precioEntero,
-      stock: stockEntero, // Enviamos el stock a la DB
+  const handleChange = (e) => {
+    setProducto({
+      ...producto,
+      [e.target.name]: e.target.value,
     });
+  };
 
-    // 4. Limpiar formulario
-    setNombre("");
-    setCategoria("");
-    setPrecio("");
-    setStock(""); // Limpiar campo stock
+  const handleSubmit = (e) => {
+    e.preventDefault();
 
-    if (inputRef.current) inputRef.current.focus();
+    // Validaciones simples
+    if (!producto.nombre || !producto.precio || !producto.stock) {
+      alert("Por favor completa los campos obligatorios.");
+      return;
+    }
+
+    // Convertir tipos si es necesario (precio y stock a números)
+    const productoAEnviar = {
+      ...producto,
+      precio: parseFloat(producto.precio),
+      stock: parseInt(producto.stock),
+    };
+
+    // Llamamos a la función del padre (AdminPanel)
+    onGuardar(productoAEnviar);
+
+    // Limpiar formulario
+    setProducto({
+      nombre: "",
+      categoria: "",
+      precio: "",
+      stock: "",
+      imagen: "",
+    });
   };
 
   return (
-    <form onSubmit={guardar}>
-      {/* Campo Nombre */}
+    <form onSubmit={handleSubmit}>
       <div className="mb-3">
-        <label htmlFor="nombre" className="form-label gamer-label">
+        <label className="form-label text-white small">
           Nombre del Producto
         </label>
         <input
-          ref={inputRef}
-          className="form-control gamer-input"
-          placeholder="Ej: Teclado Mecánico RGB"
-          value={nombre}
-          onChange={(e) => setNombre(e.target.value)}
           type="text"
-          id="nombre"
-          required
-        />
-      </div>
-
-      {/* Campo Categoría */}
-      <div className="mb-3">
-        <label htmlFor="categoria" className="form-label gamer-label">
-          Categoría / Tipo
-        </label>
-        <input
-          className="form-control gamer-input"
-          placeholder="Ej: Mouse, Tarjeta Gráfica"
-          value={categoria}
-          onChange={(e) => setCategoria(e.target.value)}
-          type="text"
-          id="categoria"
+          name="nombre"
+          className="form-control bg-dark text-white border-secondary"
+          value={producto.nombre}
+          onChange={handleChange}
           required
         />
       </div>
 
       <div className="row">
-        {/* Campo Precio */}
-        <div className="col-md-6 mb-3">
-          <label htmlFor="precio" className="form-label gamer-label">
-            Precio ($)
-          </label>
+        <div className="col-6 mb-3">
+          <label className="form-label text-white small">Precio</label>
           <input
-            className="form-control gamer-input"
-            placeholder="0"
-            value={precio}
-            onChange={(e) => setPrecio(e.target.value)}
             type="number"
-            min="1"
-            id="precio"
+            name="precio"
+            className="form-control bg-dark text-white border-secondary"
+            value={producto.precio}
+            onChange={handleChange}
             required
-          />
-        </div>
-
-        {/* NUEVO: Campo Stock */}
-        <div className="col-md-6 mb-4">
-          <label htmlFor="stock" className="form-label gamer-label">
-            Stock Inicial
-          </label>
-          <input
-            className="form-control gamer-input"
-            placeholder="Cant."
-            value={stock}
-            onChange={(e) => setStock(e.target.value)}
-            type="number"
             min="0"
-            id="stock"
+            step="0.01"
+          />
+        </div>
+        <div className="col-6 mb-3">
+          <label className="form-label text-white small">Stock</label>
+          <input
+            type="number"
+            name="stock"
+            className="form-control bg-dark text-white border-secondary"
+            value={producto.stock}
+            onChange={handleChange}
             required
+            min="0"
           />
         </div>
       </div>
 
-      {/* Botón Guardar */}
-      <div className="d-grid">
-        <button className="btn btn-gamer-primary btn-lg" type="submit">
-          Guardar Producto
-        </button>
+      <div className="mb-3">
+        <label className="form-label text-white small">Categoría</label>
+        <select
+          name="categoria"
+          className="form-select bg-dark text-white border-secondary"
+          value={producto.categoria}
+          onChange={handleChange}
+        >
+          <option value="">Selecciona...</option>
+          <option value="Consolas">Consolas</option>
+          <option value="Juegos">Juegos</option>
+          <option value="Accesorios">Accesorios</option>
+          <option value="PC">PC Gaming</option>
+        </select>
       </div>
+
+      <div className="mb-3">
+        <label className="form-label text-white small">
+          URL Imagen (Opcional)
+        </label>
+        <input
+          type="text"
+          name="imagen"
+          className="form-control bg-dark text-white border-secondary"
+          value={producto.imagen}
+          onChange={handleChange}
+          placeholder="https://..."
+        />
+      </div>
+
+      <button type="submit" className="btn btn-warning w-100 fw-bold">
+        💾 GUARDAR PRODUCTO
+      </button>
     </form>
   );
 }

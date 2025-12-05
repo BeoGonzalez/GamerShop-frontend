@@ -1,8 +1,8 @@
 import React, { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 
-function Navbar({ isAuth, role, onLogout }) {
-  // Estado para controlar el colapso del menú en móviles
+// AHORA RECIBIMOS 'username' ADEMÁS DE 'role'
+function Navbar({ isAuth, role, username, onLogout }) {
   const [isOpen, setIsOpen] = useState(false);
   const navigate = useNavigate();
 
@@ -18,7 +18,7 @@ function Navbar({ isAuth, role, onLogout }) {
   return (
     <nav className="navbar navbar-expand-lg navbar-dark bg-dark fixed-top shadow-sm">
       <div className="container">
-        {/* 1. LOGO */}
+        {/* LOGO */}
         <Link
           className="navbar-brand fw-bold fs-4 text-white d-flex align-items-center gap-2"
           to="/"
@@ -27,7 +27,7 @@ function Navbar({ isAuth, role, onLogout }) {
           <span>🎮</span> <span style={{ color: "#a855f7" }}>GamerShop</span>
         </Link>
 
-        {/* 2. BOTÓN HAMBURGUESA (Toggler) */}
+        {/* BOTÓN HAMBURGUESA */}
         <button
           className="navbar-toggler"
           type="button"
@@ -40,13 +40,12 @@ function Navbar({ isAuth, role, onLogout }) {
           <span className="navbar-toggler-icon"></span>
         </button>
 
-        {/* 3. CONTENIDO DEL MENÚ (Collapsible) */}
-        {/* Agregamos la clase 'show' condicionalmente para abrir/cerrar sin necesitar jQuery */}
+        {/* CONTENIDO DEL MENÚ */}
         <div
           className={`collapse navbar-collapse ${isOpen ? "show" : ""}`}
           id="navbarNav"
         >
-          {/* Enlaces a la Izquierda */}
+          {/* Enlaces Izquierda */}
           <ul className="navbar-nav me-auto mb-2 mb-lg-0">
             <li className="nav-item">
               <Link className="nav-link" to="/" onClick={closeMenu}>
@@ -71,7 +70,7 @@ function Navbar({ isAuth, role, onLogout }) {
                   to="/carrito"
                   onClick={closeMenu}
                 >
-                  🛒 Carrito
+                  Carrito
                 </Link>
               </li>
             )}
@@ -85,13 +84,13 @@ function Navbar({ isAuth, role, onLogout }) {
                   className="nav-link btn btn-outline-warning btn-sm text-warning px-3 border-warning rounded-pill fw-bold"
                   style={{ width: "fit-content" }}
                 >
-                  ⚙️ AdminPanel
+                  AdminPanel
                 </Link>
               </li>
             )}
           </ul>
 
-          {/* Botones Derecha (Login / Logout) */}
+          {/* Botones Derecha */}
           <div className="d-flex flex-column flex-lg-row align-items-lg-center gap-3 mt-3 mt-lg-0">
             {!isAuth ? (
               <Link
@@ -103,7 +102,7 @@ function Navbar({ isAuth, role, onLogout }) {
               </Link>
             ) : (
               <>
-                {/* Texto de Bienvenida */}
+                {/* Texto de Bienvenida con NOMBRE DE USUARIO */}
                 <div className="text-white text-lg-end lh-1">
                   <small
                     className="d-block text-secondary text-uppercase fw-bold"
@@ -111,7 +110,9 @@ function Navbar({ isAuth, role, onLogout }) {
                   >
                     {role === "ADMIN" ? "Administrador" : "Cliente"}
                   </small>
-                  <span className="fw-bold">Hola, Jugador</span>
+                  <span className="fw-bold text-capitalize">
+                    Hola, {username || "Jugador"}
+                  </span>
                 </div>
 
                 {/* Botón Salir */}
