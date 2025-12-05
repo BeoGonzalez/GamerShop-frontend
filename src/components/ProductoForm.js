@@ -1,14 +1,16 @@
 import React, { useState } from "react";
 
-function ProductoForm({ onGuardar }) {
-  // Estado inicial del formulario
+// Recibimos 'categoriasDisponibles' desde el padre (AdminPanel)
+function ProductoForm({ onGuardar, categoriasDisponibles = [] }) {
   const [producto, setProducto] = useState({
     nombre: "",
     categoria: "",
     precio: "",
     stock: "",
-    imagen: "", // Agrego imagen por si tu modelo la tiene, si no, puedes quitarla
+    imagen: "",
   });
+
+  const [nuevaCategoria, setNuevaCategoria] = useState(false); // Estado para alternar input manual
 
   const handleChange = (e) => {
     setProducto({
@@ -19,24 +21,18 @@ function ProductoForm({ onGuardar }) {
 
   const handleSubmit = (e) => {
     e.preventDefault();
-
-    // Validaciones simples
     if (!producto.nombre || !producto.precio || !producto.stock) {
       alert("Por favor completa los campos obligatorios.");
       return;
     }
 
-    // Convertir tipos si es necesario (precio y stock a números)
     const productoAEnviar = {
       ...producto,
       precio: parseFloat(producto.precio),
       stock: parseInt(producto.stock),
     };
 
-    // Llamamos a la función del padre (AdminPanel)
     onGuardar(productoAEnviar);
-
-    // Limpiar formulario
     setProducto({
       nombre: "",
       categoria: "",
@@ -44,6 +40,7 @@ function ProductoForm({ onGuardar }) {
       stock: "",
       imagen: "",
     });
+    setNuevaCategoria(false); // Reseteamos el modo de nueva categoría
   };
 
   return (
@@ -90,20 +87,50 @@ function ProductoForm({ onGuardar }) {
         </div>
       </div>
 
+      {/* SECCIÓN DE CATEGORÍA DINÁMICA */}
       <div className="mb-3">
-        <label className="form-label text-white small">Categoría</label>
-        <select
-          name="categoria"
-          className="form-select bg-dark text-white border-secondary"
-          value={producto.categoria}
-          onChange={handleChange}
-        >
-          <option value="">Selecciona...</option>
-          <option value="Consolas">Consolas</option>
-          <option value="Juegos">Juegos</option>
-          <option value="Accesorios">Accesorios</option>
-          <option value="PC">PC Gaming</option>
-        </select>
+        <div className="d-flex justify-content-between align-items-center mb-1">
+          <label className="form-label text-white small m-0">Categoría</label>
+          <button
+            type="button"
+            className="btn btn-link btn-sm text-info p-0 text-decoration-none"
+            onClick={() => {
+              setNuevaCategoria(!nuevaCategoria);
+              setProducto({ ...producto, categoria: "" }); // Limpiamos al cambiar
+            }}
+          >
+            {nuevaCategoria ? "Seleccionar existente" : "+ Nueva Categoría"}
+          </button>
+        </div>
+
+        {nuevaCategoria ? (
+          <input
+            type="text"
+            name="categoria"
+            className="form-control bg-dark text-white border-info"
+            value={producto.categoria}
+            onChange={handleChange}
+            placeholder="Escribe la nueva categoría..."
+            required
+            autoFocus
+          />
+        ) : (
+          <select
+            name="categoria"
+            className="form-select bg-dark text-white border-secondary"
+            value={producto.categoria}
+            onChange={handleChange}
+            required
+          >
+            <option value="">Selecciona...</option>
+            {/* Mapeamos las categorías disponibles que vienen de la BD */}
+            {categoriasDisponibles.map((cat, index) => (
+              <option key={index} value={cat}>
+                {cat}
+              </option>
+            ))}
+          </select>
+        )}
       </div>
 
       <div className="mb-3">
@@ -121,7 +148,7 @@ function ProductoForm({ onGuardar }) {
       </div>
 
       <button type="submit" className="btn btn-warning w-100 fw-bold">
-        💾 GUARDAR PRODUCTO
+        GUARDAR PRODUCTO
       </button>
     </form>
   );

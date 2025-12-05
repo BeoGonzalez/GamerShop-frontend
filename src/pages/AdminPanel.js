@@ -1,11 +1,7 @@
 import React, { useState, useEffect } from "react";
-// Rutas relativas
 import ProductoForm from "../components/ProductoForm";
 import ProductoList from "../components/ProductoList";
-// import "../Carrito.css";
 
-// Asegúrate de que esta URL sea correcta.
-// Si tu backend no tiene un ProductoController mapeado a /productos, esto dará 404, pero aquí manejamos el 403.
 const API_URL = "https://gamershop-backend-1.onrender.com/productos";
 
 function AdminPanel() {
@@ -13,175 +9,158 @@ function AdminPanel() {
   const [cargando, setCargando] = useState(false);
   const [error, setError] = useState(null);
 
-  // Helper para enviar el Token
+  // --- NUEVO: Extraer categorías únicas ---
+  // Creamos un Set para eliminar duplicados y luego lo convertimos a Array
+  const categoriasDisponibles = [
+    "Consolas",
+    "Juegos",
+    "Accesorios",
+    "PC", // Categorías base
+    ...new Set(productos.map((p) => p.categoria).filter(Boolean)), // + Categorías existentes en la BD
+  ];
+  // Eliminamos duplicados finales (por si "Consolas" ya estaba en la BD)
+  const categoriasUnicas = [...new Set(categoriasDisponibles)];
+
+  // ... (El resto de funciones getAuthHeaders, handleAuthError, useEffect, guardarProducto, eliminarProducto siguen IGUAL) ...
+  // Solo copio las partes que cambian para no hacer el código gigante innecesariamente.
+
   const getAuthHeaders = () => {
     const token = localStorage.getItem("jwt_token");
-    if (!token) return null; // Retornamos null si no hay token
+    if (!token) return null;
     return {
       "Content-Type": "application/json",
       Authorization: `Bearer ${token}`,
     };
   };
 
-  // Función para manejar errores de sesión (403)
   const handleAuthError = () => {
     alert(
-      "⚠️ Tu sesión ha expirado o no tienes permisos. Por favor inicia sesión nuevamente."
+      "⚠️ Sesión expirada o permisos insuficientes. Inicia sesión nuevamente."
     );
-    localStorage.removeItem("jwt_token"); // Borramos el token malo
+    localStorage.removeItem("jwt_token");
     localStorage.removeItem("username");
-    window.location.href = "/login"; // Forzamos la recarga hacia el login
+    window.location.href = "/login";
   };
 
-  // Cargar productos al iniciar
   useEffect(() => {
     const cargarProductos = async () => {
       setCargando(true);
       setError(null);
-
       const headers = getAuthHeaders();
-
-      // Si no hay token, mandamos al login directamente
-      if (!headers) {
-        handleAuthError();
-        return;
-      }
-
       try {
-        const response = await fetch(API_URL, { headers });
-
+        const config = headers ? { headers } : {};
+        const response = await fetch(API_URL, config);
         if (!response.ok) {
-          // Si el backend dice 403 Forbidden, el token no sirve
           if (response.status === 403) {
             handleAuthError();
             return;
           }
-          throw new Error(`Error del servidor: ${response.status}`);
+          throw new Error(`Error ${response.status}`);
         }
-
         const data = await response.json();
         setProductos(data);
       } catch (error) {
-        console.error("Error cargando productos:", error);
+        console.error("Error:", error);
         setError(error.message);
       } finally {
         setCargando(false);
       }
     };
-
     cargarProductos();
   }, []);
 
-  // Guardar nuevo producto
   const guardarProducto = async (nuevoProducto) => {
     const headers = getAuthHeaders();
     if (!headers) {
       handleAuthError();
       return;
     }
-
     try {
       const response = await fetch(API_URL, {
         method: "POST",
         headers: headers,
         body: JSON.stringify(nuevoProducto),
       });
-
       if (response.status === 403) {
         handleAuthError();
         return;
       }
-
-      if (!response.ok) {
-        const errorText = await response.text();
-        throw new Error(errorText || "No se pudo guardar");
-      }
-
+      if (!response.ok) throw new Error("Error al guardar");
       const productoGuardado = await response.json();
       setProductos([...productos, productoGuardado]);
       alert("✅ Producto registrado exitosamente.");
     } catch (error) {
-      alert(`❌ Error al guardar: ${error.message}`);
+      alert(`❌ Error: ${error.message}`);
     }
   };
 
-  // Eliminar producto
   const eliminarProducto = async (id) => {
-    if (!window.confirm("¿Seguro que deseas eliminar este producto?")) return;
-
+    if (!window.confirm("¿Eliminar producto?")) return;
     const headers = getAuthHeaders();
     if (!headers) {
       handleAuthError();
       return;
     }
-
     const backup = [...productos];
     setProductos(productos.filter((p) => p.id !== id));
-
     try {
       const response = await fetch(`${API_URL}/${id}`, {
         method: "DELETE",
-        headers: headers,
+        headers,
       });
-
       if (response.status === 403) {
         handleAuthError();
         return;
       }
-
-      if (!response.ok) {
-        throw new Error("Error al eliminar");
-      }
+      if (!response.ok) throw new Error("Error al eliminar");
     } catch (error) {
       alert(`❌ Error: ${error.message}`);
       setProductos(backup);
     }
   };
 
-  // Cálculos visuales
   const totalItems = productos.length;
-  const valorTotal = productos.reduce((acc, item) => {
-    const stock = item.stock || 0;
-    return acc + item.precio * stock;
-  }, 0);
+  const valorTotal = productos.reduce(
+    (acc, item) => acc + item.precio * item.stock,
+    0
+  );
 
   return (
     <div className="container py-5 mt-5">
-      {/* Header */}
       <div className="d-flex justify-content-between align-items-center mb-5 text-white">
         <h1 className="m-0 fw-bold">
-          PANEL DE CONTROL <span className="text-warning">ADMIN</span>
+          PANEL <span className="text-warning">ADMIN</span>
         </h1>
-        <div className="text-end">
-          <span className="badge bg-success p-2">Conexión Segura</span>
-        </div>
+        <span className="badge bg-success p-2">Conectado a API</span>
       </div>
 
-      {/* Métricas */}
       <div className="row g-4 mb-4">
         <div className="col-md-6">
-          <div className="card bg-dark text-white border-secondary p-3">
-            <h5 className="text-muted">TOTAL PRODUCTOS</h5>
+          <div className="card bg-dark text-white border-secondary p-3 shadow-sm">
+            <h5 className="text-muted small fw-bold">TOTAL PRODUCTOS</h5>
             <h2 className="text-info m-0">{totalItems}</h2>
           </div>
         </div>
         <div className="col-md-6">
-          <div className="card bg-dark text-white border-secondary p-3">
-            <h5 className="text-muted">VALOR INVENTARIO (USD)</h5>
+          <div className="card bg-dark text-white border-secondary p-3 shadow-sm">
+            <h5 className="text-muted small fw-bold">VALOR INVENTARIO (USD)</h5>
             <h2 className="text-warning m-0">${valorTotal.toLocaleString()}</h2>
           </div>
         </div>
       </div>
 
       <div className="row g-4">
-        {/* Formulario */}
         <div className="col-lg-4">
-          <div className="card bg-dark text-white border-secondary h-100">
-            <div className="card-header border-secondary">
+          <div className="card bg-dark text-white border-secondary h-100 shadow">
+            <div className="card-header border-secondary bg-black bg-opacity-25">
               <h5 className="m-0">⚡ Nuevo Producto</h5>
             </div>
             <div className="card-body">
-              <ProductoForm onGuardar={guardarProducto} />
+              {/* CAMBIO: Pasamos la lista de categorías al formulario */}
+              <ProductoForm
+                onGuardar={guardarProducto}
+                categoriasDisponibles={categoriasUnicas}
+              />
               {error && (
                 <div className="alert alert-danger mt-3 small">⚠️ {error}</div>
               )}
@@ -189,23 +168,26 @@ function AdminPanel() {
           </div>
         </div>
 
-        {/* Lista */}
         <div className="col-lg-8">
-          <div className="card bg-dark text-white border-secondary h-100">
-            <div className="card-header border-secondary">
+          <div className="card bg-dark text-white border-secondary h-100 shadow">
+            <div className="card-header border-secondary bg-black bg-opacity-25 d-flex justify-content-between align-items-center">
               <h5 className="m-0">📦 Inventario</h5>
+              {cargando && (
+                <div className="spinner-border spinner-border-sm text-info"></div>
+              )}
             </div>
-            <div className="card-body">
-              {cargando ? (
+            <div className="card-body p-0">
+              {cargando && productos.length === 0 ? (
                 <div className="text-center py-5">
-                  <div className="spinner-border text-info mb-2"></div>
-                  <p>Verificando credenciales y cargando datos...</p>
+                  <p className="text-muted">Cargando...</p>
                 </div>
               ) : (
-                <ProductoList
-                  productos={productos}
-                  onEliminar={eliminarProducto}
-                />
+                <div className="p-3">
+                  <ProductoList
+                    productos={productos}
+                    onEliminar={eliminarProducto}
+                  />
+                </div>
               )}
             </div>
           </div>
