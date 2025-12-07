@@ -1,0 +1,48 @@
+/* Importamos la fuente Montserrat */
+@import url("https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800&display=swap");
+
+/* --- CONFIGURACIÓN GLOBAL --- */
+body {
+  margin: 0;
+  padding: 0;
+  font-family: "Montserrat", sans-serif;
+
+  /* IMPORTANTE: Dejar que Bootstrap maneje el fondo y el color */
+  /* Al usar data-bs-theme="dark", Bootstrap aplica automáticamente:
+     background-color: var(--bs-body-bg);
+     color: var(--bs-body-color);
+  */
+  transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+/* Ajustes para inputs y botones */
+button,
+input,
+select,
+textarea {
+  font-family: inherit;
+}
+
+/* Animación del texto GamerShop (Opcional, si la quieres conservar) */
+@keyframes shine {
+  to {
+    background-position: 200% center;
+  }
+}
+.gamer-text {
+  background: linear-gradient(
+    to right,
+    #00d2ff 20%,
+    #3a7bd5 40%,
+    #ff00ff 60%,
+    #00d2ff 80%
+  );
+  background-size: 200% auto;
+  color: #000;
+  background-clip: text;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  animation: shine 3s linear infinite;
+  font-weight: 800;
+  letter-spacing: -0.5px;
+}

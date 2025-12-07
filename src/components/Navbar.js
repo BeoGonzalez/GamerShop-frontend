@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
+import Tema from "./Tema";
 
-// AHORA RECIBIMOS 'username' ADEMÁS DE 'role'
 function Navbar({ isAuth, role, username, onLogout }) {
   const [isOpen, setIsOpen] = useState(false);
   const navigate = useNavigate();
@@ -16,18 +16,46 @@ function Navbar({ isAuth, role, username, onLogout }) {
   const closeMenu = () => setIsOpen(false);
 
   return (
-    <nav className="navbar navbar-expand-lg navbar-dark bg-dark fixed-top shadow-sm">
+    <nav className="navbar navbar-expand-lg fixed-top shadow-sm bg-body-tertiary">
+      {/* Estilos para la animación del texto. 
+          Lo definimos aquí para mantener todo en un solo archivo, 
+          pero idealmente iría en tu CSS global.
+      */}
+      <style>
+        {`
+          @keyframes shine {
+            to {
+              background-position: 200% center;
+            }
+          }
+          .gamer-text {
+            background: linear-gradient(to right, #00d2ff 20%, #3a7bd5 40%, #ff00ff 60%, #00d2ff 80%);
+            background-size: 200% auto;
+            color: #000;
+            background-clip: text;
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            animation: shine 3s linear infinite;
+            font-weight: 800;
+            letter-spacing: -0.5px;
+          }
+        `}
+      </style>
+
       <div className="container">
-        {/* LOGO */}
+        {/* 1. LOGO CON EFECTO GRADIENTE ANIMADO */}
         <Link
-          className="navbar-brand fw-bold fs-4 text-white d-flex align-items-center gap-2"
+          className="navbar-brand fw-bold fs-4 d-flex align-items-center gap-2"
           to="/"
           onClick={closeMenu}
         >
-          <span>🎮</span> <span style={{ color: "#a855f7" }}>GamerShop</span>
+          <span style={{ fontSize: "1.5rem" }}>🎮</span>
+
+          {/* APLICAMOS LA CLASE ANIMADA AQUÍ */}
+          <span className="gamer-text">GamerShop</span>
         </Link>
 
-        {/* BOTÓN HAMBURGUESA */}
+        {/* 2. BOTÓN HAMBURGUESA */}
         <button
           className="navbar-toggler"
           type="button"
@@ -40,7 +68,7 @@ function Navbar({ isAuth, role, username, onLogout }) {
           <span className="navbar-toggler-icon"></span>
         </button>
 
-        {/* CONTENIDO DEL MENÚ */}
+        {/* 3. CONTENIDO DEL MENÚ */}
         <div
           className={`collapse navbar-collapse ${isOpen ? "show" : ""}`}
           id="navbarNav"
@@ -66,16 +94,16 @@ function Navbar({ isAuth, role, username, onLogout }) {
             {isAuth && (
               <li className="nav-item">
                 <Link
-                  className="nav-link text-info"
+                  className="nav-link text-info fw-bold"
                   to="/carrito"
                   onClick={closeMenu}
                 >
-                  Carrito
+                  🛒 Carrito
                 </Link>
               </li>
             )}
 
-            {/* Link Admin (Solo si es ADMIN) */}
+            {/* Link Admin */}
             {isAuth && role === "ADMIN" && (
               <li className="nav-item ms-lg-2 mt-2 mt-lg-0">
                 <Link
@@ -92,6 +120,11 @@ function Navbar({ isAuth, role, username, onLogout }) {
 
           {/* Botones Derecha */}
           <div className="d-flex flex-column flex-lg-row align-items-lg-center gap-3 mt-3 mt-lg-0">
+            {/* BOTÓN DE TEMA */}
+            <div className="align-self-start align-self-lg-center">
+              <Tema />
+            </div>
+
             {!isAuth ? (
               <Link
                 to="/login"
@@ -102,8 +135,8 @@ function Navbar({ isAuth, role, username, onLogout }) {
               </Link>
             ) : (
               <>
-                {/* Texto de Bienvenida con NOMBRE DE USUARIO */}
-                <div className="text-white text-lg-end lh-1">
+                {/* Texto de Bienvenida */}
+                <div className="text-end lh-1">
                   <small
                     className="d-block text-secondary text-uppercase fw-bold"
                     style={{ fontSize: "0.7rem" }}
@@ -115,7 +148,6 @@ function Navbar({ isAuth, role, username, onLogout }) {
                   </span>
                 </div>
 
-                {/* Botón Salir */}
                 <button
                   onClick={handleLogout}
                   className="btn btn-outline-danger btn-sm rounded-pill px-3"

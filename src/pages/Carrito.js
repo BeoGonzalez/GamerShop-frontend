@@ -1,110 +1,74 @@
 import React, { useState, useEffect, useCallback } from "react";
-import { useNavigate } from "react-router-dom";
-import "../Carrito.css";
+import { Link, useNavigate } from "react-router-dom";
 
-const API_URL = "https://gamershop-backend-1.onrender.com/api/producto";
+// Asegúrate de que esta URL sea correcta para tu backend
+const API_URL = "https://gamershop-backend-1.onrender.com/productos";
 
 function Carrito() {
   const navigate = useNavigate();
 
-  // --- ESTADOS ---
-  const [productos, setProductos] = useState([]);
-  const [loading, setLoading] = useState(false);
+  // --- 1. DATOS DE SESIÓN ---
+  const username = localStorage.getItem("username");
+  const token = localStorage.getItem("jwt_token");
+  const isAuth = !!token && !!username;
 
-  // Estado del carrito (persistencia en localStorage)
+  // Clave única para leer el carrito de ESTE usuario específico
+  const storageKey = isAuth ? `carrito_${username}` : null;
+
+  // --- 2. ESTADOS ---
   const [carrito, setCarrito] = useState(() => {
-    const saved = localStorage.getItem("user_cart");
-    return saved ? JSON.parse(saved) : [];
+    if (!storageKey) return [];
+    const saved = localStorage.getItem(storageKey);
+    try {
+      return saved ? JSON.parse(saved) : [];
+    } catch (e) {
+      return [];
+    }
   });
 
-  // Estados para la Boleta Falsa (Modal)
-  const [showReceipt, setShowReceipt] = useState(false);
-  const [lastOrder, setLastOrder] = useState(null);
+  const [productosStock, setProductosStock] = useState([]);
+  const [total, setTotal] = useState(0);
+  const [boleta, setBoleta] = useState(null);
+  const [procesando, setProcesando] = useState(false);
 
-  // Función auxiliar para obtener Headers con Token
-  // (No necesita estar dentro de useCallback porque no depende de estados)
-  const getAuthHeaders = () => {
-    const token = localStorage.getItem("token");
-    return token
-      ? { "Content-Type": "application/json", Authorization: `Bearer ${token}` }
-      : {};
-  };
+  // --- 3. EFECTOS ---
 
-  // 1. Cargar productos de la BD
-  // CORRECCIÓN: Usamos useCallback para estabilizar la función
-  const fetchProductos = useCallback(async () => {
-    setLoading(true);
+  const fetchStock = useCallback(async () => {
     try {
-      const headers = getAuthHeaders();
-      const config = headers.Authorization ? { headers } : {};
-
-      const response = await fetch(API_URL, config);
+      const response = await fetch(API_URL);
       if (response.ok) {
         const data = await response.json();
-        setProductos(data);
-      } else {
-        console.error("Error al cargar productos");
+        setProductosStock(data);
       }
     } catch (error) {
-      console.error("Error de conexión:", error);
-    } finally {
-      setLoading(false);
+      console.error("Error al sincronizar stock:", error);
     }
-  }, []); // Array vacío: la función no depende de props ni estados externos cambiantes
+  }, []);
 
-  // Cargar al inicio (Ahora sí es seguro poner la dependencia)
   useEffect(() => {
-    fetchProductos();
-  }, [fetchProductos]);
+    fetchStock();
+  }, [fetchStock]);
 
-  // 2. Guardar carrito en LocalStorage al cambiar
   useEffect(() => {
-    localStorage.setItem("user_cart", JSON.stringify(carrito));
-  }, [carrito]);
+    const nuevoTotal = carrito.reduce((acc, item) => {
+      const cantidad = item.cantidad || 1;
+      return acc + item.precio * cantidad;
+    }, 0);
+    setTotal(nuevoTotal);
 
-  // --- FUNCIONES DEL CARRITO ---
-
-  const addToCart = (producto) => {
-    const token = localStorage.getItem("token");
-    if (!token) {
-      alert("🔐 Debes iniciar sesión para comprar");
-      navigate("/login");
-      return;
+    if (storageKey) {
+      localStorage.setItem(storageKey, JSON.stringify(carrito));
     }
+  }, [carrito, storageKey]);
 
-    // --- VALIDACIÓN DE STOCK ---
-    const itemInCart = carrito.find((item) => item.id === producto.id);
-    const cantidadActual = itemInCart ? itemInCart.cantidad : 0;
+  // --- 4. ACCIONES ---
 
-    const stockReal = producto.stock !== undefined ? producto.stock : 0;
-
-    if (stockReal <= 0) {
-      alert("❌ Este producto está agotado.");
-      return;
-    }
-
-    if (cantidadActual + 1 > stockReal) {
-      alert(`❌ Stock insuficiente. Solo quedan ${stockReal} unidades.`);
-      return;
-    }
-
-    setCarrito((prevCarrito) => {
-      const itemExists = prevCarrito.find((item) => item.id === producto.id);
-      if (itemExists) {
-        return prevCarrito.map((item) =>
-          item.id === producto.id
-            ? { ...item, cantidad: item.cantidad + 1 }
-            : item
-        );
-      } else {
-        return [...prevCarrito, { ...producto, cantidad: 1 }];
-      }
-    });
-  };
-
-  const removeFromCart = (id) => {
-    if (window.confirm("¿Eliminar producto del carrito?")) {
-      setCarrito((prev) => prev.filter((item) => item.id !== id));
+  const eliminarProducto = (id) => {
+    if (
+      window.confirm("¿Estás seguro de eliminar este producto del carrito?")
+    ) {
+      const nuevoCarrito = carrito.filter((item) => item.id !== id);
+      setCarrito(nuevoCarrito);
     }
   };
 
@@ -112,38 +76,39 @@ function Carrito() {
     setCarrito((prev) =>
       prev.map((item) => {
         if (item.id === id) {
-          const productoReal = productos.find((p) => p.id === id);
-          const maxStock = productoReal ? productoReal.stock : 0;
+          const productoReal = productosStock.find((p) => p.id === id);
+          const maxStock = productoReal ? productoReal.stock : 999;
+          const nuevaCantidad = (item.cantidad || 1) + amount;
 
-          const newQuantity = item.cantidad + amount;
-
-          if (newQuantity < 1) return item;
-          if (newQuantity > maxStock) {
-            alert(`⚠️ No puedes llevar más de ${maxStock} unidades.`);
+          if (nuevaCantidad < 1) return item;
+          if (nuevaCantidad > maxStock) {
+            alert(`⚠️ ¡Stock insuficiente! Solo quedan ${maxStock} unidades.`);
             return item;
           }
-
-          return { ...item, cantidad: newQuantity };
+          return { ...item, cantidad: nuevaCantidad };
         }
         return item;
       })
     );
   };
 
-  const total = carrito.reduce(
-    (acc, item) => acc + item.precio * item.cantidad,
-    0
-  );
-
-  // --- LÓGICA DE PAGO CONECTADA AL BACKEND ---
-  const handleCheckout = async () => {
+  const procesarCompra = async () => {
     if (carrito.length === 0) return;
+    setProcesando(true);
 
     try {
+      const itemsParaBackend = carrito.map((item) => ({
+        id: item.id,
+        cantidad: item.cantidad || 1,
+      }));
+
       const response = await fetch(`${API_URL}/comprar`, {
         method: "POST",
-        headers: getAuthHeaders(),
-        body: JSON.stringify(carrito),
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify(itemsParaBackend),
       });
 
       if (!response.ok) {
@@ -151,260 +116,290 @@ function Carrito() {
         throw new Error(errorText);
       }
 
-      const orderData = {
-        id: Math.floor(Math.random() * 900000) + 100000,
-        fecha: new Date().toLocaleString(),
+      const nuevaBoleta = {
+        idOrden: Math.floor(Math.random() * 900000) + 100000,
+        fecha: new Date().toLocaleDateString(),
+        hora: new Date().toLocaleTimeString(),
+        cliente: username,
         items: [...carrito],
-        total: total,
+        totalPagado: total,
       };
 
-      setLastOrder(orderData);
+      setBoleta(nuevaBoleta);
       setCarrito([]);
-      localStorage.removeItem("user_cart");
-      setShowReceipt(true);
-
-      // Recargamos los productos para ver el stock actualizado
-      fetchProductos();
+      if (storageKey) localStorage.removeItem(storageKey);
+      fetchStock();
     } catch (error) {
-      alert("❌ Error al procesar la compra: " + error.message);
+      console.error("Error en compra:", error);
+      alert("❌ No se pudo completar la compra:\n" + error.message);
+    } finally {
+      setProcesando(false);
     }
   };
 
+  const cerrarBoleta = () => {
+    setBoleta(null);
+    navigate("/");
+  };
+
+  // --- RENDERIZADO ---
+
+  if (!isAuth) {
+    return (
+      <div className="container py-5 text-center mt-5">
+        {/* Card adaptable */}
+        <div className="card shadow p-5 mx-auto" style={{ maxWidth: "500px" }}>
+          <h2>🔒 Acceso Restringido</h2>
+          <p className="text-muted">
+            Debes iniciar sesión para ver tu carrito.
+          </p>
+          <Link to="/login" className="btn btn-primary fw-bold">
+            Ir al Login
+          </Link>
+        </div>
+      </div>
+    );
+  }
+
   return (
-    <div className="gamer-container py-5 position-relative">
-      <div className="container">
-        <h1 className="text-center gamer-title mb-5">
-          🛒 Tu <span className="highlight">Carrito Gamer</span>
-        </h1>
+    <div className="container py-5 mt-5 position-relative">
+      {/* Título adaptable */}
+      <h2 className="mb-4 border-bottom pb-3">
+        🛒 Carrito de{" "}
+        <span className="text-primary text-capitalize">{username}</span>
+      </h2>
 
-        <div className="row g-5">
-          {/* COLUMNA IZQUIERDA: CATÁLOGO */}
-          <div className="col-lg-8">
-            <h4 className="mb-4 text-info">🔥 Productos Disponibles</h4>
-            {loading ? (
-              <div className="text-center text-light">
-                Cargando inventario...
-              </div>
-            ) : (
-              <div className="row g-3">
-                {productos.map((p) => (
-                  <div key={p.id} className="col-md-6 col-xl-4">
-                    <Card producto={p} onAddToCart={addToCart} />
-                  </div>
-                ))}
-                {productos.length === 0 && !loading && (
-                  <p className="text-muted">
-                    No hay productos en el inventario.
-                  </p>
-                )}
-              </div>
-            )}
-          </div>
-
-          {/* COLUMNA DERECHA: RESUMEN CARRITO */}
-          <div className="col-lg-4">
-            <div
-              className="gamer-panel sticky-top"
-              style={{ top: "20px", zIndex: 90 }}
-            >
-              <div className="gamer-panel-header">
-                <h5>🛍️ Resumen de Compra</h5>
-              </div>
-              <div className="gamer-panel-body">
-                {carrito.length === 0 ? (
-                  <div className="text-center py-4 text-muted">
-                    <p>Tu carrito está vacío.</p>
-                    <small>¡Equipa tu inventario!</small>
-                  </div>
-                ) : (
-                  <>
-                    <ul className="list-group list-group-flush mb-3">
-                      {carrito.map((item) => (
-                        <li
-                          key={item.id}
-                          className="list-group-item bg-transparent text-light border-secondary d-flex justify-content-between align-items-center px-0"
-                        >
-                          <div style={{ maxWidth: "55%" }}>
-                            <h6
-                              className="my-0 text-truncate"
-                              title={item.nombre}
-                            >
-                              {item.nombre}
-                            </h6>
-                            <small className="text-muted">
-                              ${item.precio} x {item.cantidad}
-                            </small>
-                          </div>
-                          <div className="d-flex align-items-center gap-1">
-                            <button
-                              className="btn btn-sm btn-outline-secondary text-light"
-                              onClick={() => updateQuantity(item.id, -1)}
-                            >
-                              -
-                            </button>
-                            <span className="px-2">{item.cantidad}</span>
-                            <button
-                              className="btn btn-sm btn-outline-secondary text-light"
-                              onClick={() => updateQuantity(item.id, 1)}
-                            >
-                              +
-                            </button>
-                            <button
-                              className="btn btn-sm btn-danger ms-2"
-                              onClick={() => removeFromCart(item.id)}
-                            >
-                              ×
-                            </button>
-                          </div>
-                        </li>
-                      ))}
-                    </ul>
-
-                    <div className="d-flex justify-content-between align-items-center border-top border-secondary pt-3 mt-3">
-                      <h5>Total:</h5>
-                      <h3 className="text-info">${total}</h3>
+      <div className="row g-5">
+        {/* COLUMNA IZQUIERDA: LISTA DE PRODUCTOS */}
+        <div className="col-lg-8">
+          {carrito.length === 0 ? (
+            <div className="alert alert-secondary text-center py-5">
+              <h4>Tu carrito está vacío 😢</h4>
+              <p>¡Ve a la tienda y agrega algunos juegos!</p>
+              <Link to="/" className="btn btn-outline-primary mt-3">
+                Ir a Comprar
+              </Link>
+            </div>
+          ) : (
+            <div className="d-flex flex-column gap-3">
+              {carrito.map((item) => (
+                <div key={item.id} className="card shadow-sm border">
+                  <div className="card-body d-flex align-items-center flex-wrap gap-3">
+                    {/* Imagen del Producto: Fondo adaptable */}
+                    <div
+                      className="bg-body-secondary rounded d-flex align-items-center justify-content-center"
+                      style={{
+                        width: "80px",
+                        height: "80px",
+                        overflow: "hidden",
+                      }}
+                    >
+                      {item.imagen ? (
+                        <img
+                          src={item.imagen}
+                          alt={item.nombre}
+                          style={{
+                            width: "100%",
+                            height: "100%",
+                            objectFit: "cover",
+                          }}
+                        />
+                      ) : (
+                        <span style={{ fontSize: "2rem" }}>🎮</span>
+                      )}
                     </div>
 
-                    <button
-                      className="btn btn-gamer-primary w-100 mt-3"
-                      onClick={handleCheckout}
+                    {/* Información y Botón Eliminar */}
+                    <div className="flex-grow-1">
+                      <div className="d-flex justify-content-between align-items-start mb-1">
+                        <h5
+                          className="mb-0 text-primary text-truncate"
+                          title={item.nombre}
+                          style={{ maxWidth: "250px" }}
+                        >
+                          {item.nombre}
+                        </h5>
+                        <button
+                          onClick={() => eliminarProducto(item.id)}
+                          className="btn btn-sm btn-outline-danger border-0 py-0"
+                          title="Eliminar del carrito"
+                        >
+                          ❌ Eliminar
+                        </button>
+                      </div>
+                      <small className="text-muted d-block">
+                        {item.categoria}
+                      </small>
+                      <div className="fw-bold mt-1">
+                        ${item.precio.toLocaleString()}{" "}
+                        <span className="text-muted small fw-normal">
+                          unidad
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* Controles de Cantidad: Botones Outline adaptables */}
+                    <div className="d-flex align-items-center border rounded px-2">
+                      <button
+                        className="btn btn-sm btn-link text-decoration-none text-body"
+                        onClick={() => updateQuantity(item.id, -1)}
+                      >
+                        -
+                      </button>
+
+                      <span
+                        className="mx-3 fw-bold"
+                        style={{ minWidth: "20px", textAlign: "center" }}
+                      >
+                        {item.cantidad || 1}
+                      </span>
+
+                      <button
+                        className="btn btn-sm btn-link text-decoration-none text-body"
+                        onClick={() => updateQuantity(item.id, 1)}
+                      >
+                        +
+                      </button>
+                    </div>
+
+                    {/* Subtotal del Item */}
+                    <div
+                      className="text-end ms-auto"
+                      style={{ minWidth: "90px" }}
                     >
-                      PAGAR Y DESCONTAR STOCK 💳
-                    </button>
-                  </>
-                )}
-              </div>
+                      <small className="d-block text-muted">Subtotal</small>
+                      <span className="fw-bold fs-5 text-success">
+                        ${(item.precio * (item.cantidad || 1)).toLocaleString()}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              ))}
             </div>
-          </div>
-        </div>
-      </div>
-
-      {/* --- MODAL DE BOLETA (OVERLAY) --- */}
-      {showReceipt && lastOrder && (
-        <div
-          className="position-fixed top-0 start-0 w-100 h-100 d-flex justify-content-center align-items-center"
-          style={{ backgroundColor: "rgba(0,0,0,0.9)", zIndex: 9999 }}
-        >
-          <div
-            className="gamer-panel p-4"
-            style={{
-              maxWidth: "500px",
-              width: "90%",
-              border: "2px solid #00f3ff",
-              boxShadow: "0 0 30px rgba(0, 243, 255, 0.3)",
-            }}
-          >
-            <div className="text-center mb-4">
-              <h1 className="display-4">✅</h1>
-              <h3 className="text-success">¡Compra Exitosa!</h3>
-              <p className="text-muted small">
-                Tu inventario ha sido actualizado.
-              </p>
-            </div>
-
-            <div
-              className="bg-dark p-3 rounded border border-secondary mb-4"
-              style={{ fontFamily: "'Courier New', monospace" }}
-            >
-              <div className="text-center border-bottom border-secondary pb-2 mb-2">
-                <h5 className="text-info m-0">GAMERSHOP RECEIPT</h5>
-                <small className="text-muted">ID: #{lastOrder.id}</small>
-              </div>
-
-              <div className="mb-3">
-                <small className="text-muted d-block">
-                  Fecha: {lastOrder.fecha}
-                </small>
-              </div>
-
-              <ul className="list-unstyled mb-3 border-bottom border-secondary pb-2">
-                {lastOrder.items.map((item, index) => (
-                  <li
-                    key={index}
-                    className="d-flex justify-content-between text-light small mb-1"
-                  >
-                    <span>
-                      {item.cantidad} x {item.nombre}
-                    </span>
-                    <span>${item.precio * item.cantidad}</span>
-                  </li>
-                ))}
-              </ul>
-
-              <div className="d-flex justify-content-between fw-bold text-white fs-5">
-                <span>TOTAL</span>
-                <span className="text-success">${lastOrder.total}</span>
-              </div>
-            </div>
-
-            <button
-              className="btn btn-outline-info w-100"
-              onClick={() => setShowReceipt(false)}
-            >
-              CERRAR Y SEGUIR COMPRANDO
-            </button>
-          </div>
-        </div>
-      )}
-    </div>
-  );
-}
-
-// Componente Card con visualización de STOCK
-function Card({ producto, onAddToCart }) {
-  const stockDisponible = producto.stock !== undefined ? producto.stock : 0;
-  const sinStock = stockDisponible <= 0;
-
-  return (
-    <div
-      className={`card h-100 text-center bg-dark border-secondary shadow-sm ${
-        sinStock ? "opacity-50" : ""
-      }`}
-    >
-      <div
-        className="card-img-top bg-secondary d-flex align-items-center justify-content-center text-light"
-        style={{ height: "180px", objectFit: "cover" }}
-      >
-        <span className="h1">🎮</span>
-      </div>
-      <div className="card-body d-flex flex-column">
-        <h5
-          className="card-title text-light text-truncate"
-          title={producto.nombre}
-        >
-          {producto.nombre}
-        </h5>
-
-        {/* INDICADOR DE STOCK */}
-        <div className="mb-2">
-          {sinStock ? (
-            <span className="badge bg-danger">AGOTADO</span>
-          ) : (
-            <span
-              className={`badge ${
-                stockDisponible < 5 ? "bg-warning text-dark" : "bg-success"
-              }`}
-            >
-              Stock: {stockDisponible}
-            </span>
           )}
         </div>
 
-        <p className="card-text text-muted small text-truncate">
-          {producto.categoria}
-        </p>
+        {/* COLUMNA DERECHA: RESUMEN DE PAGO */}
+        {carrito.length > 0 && (
+          <div className="col-lg-4">
+            <div className="card shadow-sm sticky-top" style={{ top: "100px" }}>
+              <div className="card-header bg-body-tertiary">
+                <h5 className="m-0">Resumen de Compra</h5>
+              </div>
+              <div className="card-body">
+                <div className="d-flex justify-content-between mb-2 text-muted">
+                  <span>Productos</span>
+                  <span>
+                    {carrito.reduce((acc, i) => acc + (i.cantidad || 1), 0)} u.
+                  </span>
+                </div>
+                <div className="d-flex justify-content-between mb-3 text-muted">
+                  <span>Envío</span>
+                  <span className="text-success">Gratis</span>
+                </div>
+                <hr />
+                <div className="d-flex justify-content-between mb-4 align-items-center">
+                  <span className="fs-5">TOTAL A PAGAR</span>
+                  <span className="fs-3 fw-bold text-primary">
+                    ${total.toLocaleString()}
+                  </span>
+                </div>
 
-        <div className="mt-auto">
-          <p className="fw-bold text-info fs-5 mb-2">${producto.precio}</p>
-          <button
-            className="btn btn-success w-100 btn-sm"
-            onClick={() => onAddToCart(producto)}
-            disabled={sinStock}
-          >
-            {sinStock ? "Sin Stock" : "Agregar +"}
-          </button>
-        </div>
+                <button
+                  onClick={procesarCompra}
+                  disabled={procesando}
+                  className="btn btn-success w-100 py-3 fw-bold shadow-lg"
+                >
+                  {procesando ? (
+                    <>
+                      <span className="spinner-border spinner-border-sm me-2"></span>
+                      Procesando...
+                    </>
+                  ) : (
+                    "PAGAR AHORA 💳"
+                  )}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
+
+      {/* --- MODAL BOLETA DE VENTA (Overlay) --- */}
+      {boleta && (
+        <div
+          className="position-fixed top-0 start-0 w-100 h-100 d-flex justify-content-center align-items-center"
+          style={{
+            backgroundColor: "rgba(0,0,0,0.8)",
+            zIndex: 9999,
+            backdropFilter: "blur(4px)",
+          }}
+        >
+          <div
+            className="card shadow-lg p-0"
+            style={{
+              maxWidth: "400px",
+              width: "90%",
+              fontFamily: "'Courier New', monospace",
+            }}
+          >
+            <div className="card-header bg-success text-white text-center py-3">
+              <h4 className="m-0">✅ PAGO EXITOSO</h4>
+              <small>GamerShop Inc.</small>
+            </div>
+
+            <div className="card-body p-4 bg-body">
+              <div className="text-center border-bottom pb-3 mb-3 border-2">
+                <p className="mb-1 fw-bold">ORDEN #{boleta.idOrden}</p>
+                <p className="mb-1">
+                  {boleta.fecha} - {boleta.hora}
+                </p>
+                <p className="mb-0">
+                  Cliente: <strong>{boleta.cliente}</strong>
+                </p>
+              </div>
+
+              <div className="mb-3">
+                <p className="small text-muted mb-2 border-bottom pb-1">
+                  DETALLE:
+                </p>
+                <ul className="list-unstyled mb-0">
+                  {boleta.items.map((item, idx) => (
+                    <li
+                      key={idx}
+                      className="d-flex justify-content-between small mb-1"
+                    >
+                      <span>
+                        {item.cantidad} x {item.nombre}
+                      </span>
+                      <span>
+                        ${(item.precio * item.cantidad).toLocaleString()}
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+
+              <div className="d-flex justify-content-between border-top pt-3 mt-2 fw-bold fs-5">
+                <span>TOTAL</span>
+                <span>${boleta.totalPagado.toLocaleString()}</span>
+              </div>
+            </div>
+
+            <div className="card-footer bg-body border-0 text-center pb-4">
+              <p className="small text-muted mb-3">
+                Tu inventario ha sido actualizado.
+              </p>
+              <button
+                onClick={cerrarBoleta}
+                className="btn btn-dark w-100 fw-bold"
+              >
+                CERRAR Y SEGUIR COMPRANDO
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

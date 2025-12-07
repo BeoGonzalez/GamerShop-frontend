@@ -24,20 +24,17 @@ const Login = ({ onLoginSuccess }) => {
         password: password,
       });
 
-      console.log("RESPUESTA DEL BACKEND:", response.data);
-
-      // 2. CORRECCIÓN: Desempaquetar el JSON (Token + Rol)
-      // El backend devuelve: { "token": "...", "rol": "ADMIN", "username": "..." }
+      // 2. Desempaquetar el JSON (Token + Rol)
       const { token, rol } = response.data;
 
       // 3. Guardar TODO en localStorage
       localStorage.setItem("jwt_token", token);
       localStorage.setItem("username", username);
-      localStorage.setItem("rol", rol); // <--- Guardamos el rol real
+      localStorage.setItem("rol", rol);
 
-      // 4. ¡IMPORTANTE! Avisar a App.js con el rol incluido
+      // 4. Avisar a App.js
       if (onLoginSuccess) {
-        onLoginSuccess(username, rol); // <--- Pasamos el rol para que el Navbar se actualice
+        onLoginSuccess(username, rol);
       }
 
       // 5. Redirigir al Home
@@ -61,14 +58,17 @@ const Login = ({ onLoginSuccess }) => {
   };
 
   return (
-    <div className="d-flex justify-content-center align-items-center min-vh-100 bg-dark">
+    // CAMBIO 1: Usamos 'bg-body-tertiary' en lugar de 'bg-dark'.
+    // Esto será gris claro en modo Light y gris oscuro en modo Dark.
+    <div className="d-flex justify-content-center align-items-center min-vh-100 bg-body-tertiary">
+      {/* CAMBIO 2: Quitamos 'text-white' y estilos inline de color. 
+          La clase 'card' de Bootstrap 5.3 ya maneja el cambio de color automáticamente. */}
       <div
-        className="card p-4 shadow-lg text-white"
+        className="card p-4 shadow-lg"
         style={{
           width: "100%",
           maxWidth: "400px",
-          backgroundColor: "#212529",
-          border: "1px solid #495057",
+          // Eliminamos el backgroundColor fijo para que Bootstrap decida
         }}
       >
         <div className="card-body">
@@ -76,10 +76,12 @@ const Login = ({ onLoginSuccess }) => {
 
           <form onSubmit={handleLogin}>
             <div className="mb-3 text-start">
-              <label className="form-label text-light">Usuario</label>
+              <label className="form-label fw-bold">Usuario</label>
+              {/* CAMBIO 3: Quitamos 'bg-secondary text-white border-0'. 
+                  Usamos solo 'form-control', que se adapta al tema. */}
               <input
                 type="text"
-                className="form-control bg-secondary text-white border-0"
+                className="form-control"
                 value={username}
                 onChange={(e) => setUsername(e.target.value)}
                 required
@@ -88,10 +90,10 @@ const Login = ({ onLoginSuccess }) => {
             </div>
 
             <div className="mb-4 text-start">
-              <label className="form-label text-light">Contraseña</label>
+              <label className="form-label fw-bold">Contraseña</label>
               <input
                 type="password"
-                className="form-control bg-secondary text-white border-0"
+                className="form-control"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 required
@@ -131,12 +133,11 @@ const Login = ({ onLoginSuccess }) => {
             )}
           </form>
 
-          <div className="mt-4 text-center border-top border-secondary pt-3">
+          <div className="mt-4 text-center border-top pt-3">
             <p className="text-muted small mb-1">¿No tienes cuenta?</p>
-            {/* CORRECCIÓN: El link debe ser /register para coincidir con App.js */}
             <Link
               to="/register"
-              className="text-decoration-none fw-bold text-info"
+              className="text-decoration-none fw-bold text-primary"
             >
               Regístrate aquí
             </Link>

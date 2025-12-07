@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import axios from "axios";
+import { useNavigate } from "react-router-dom";
 import Hero from "../components/Hero";
 
 function Home() {
@@ -9,7 +10,13 @@ function Home() {
   const [cargando, setCargando] = useState(true);
   const [error, setError] = useState(null);
 
-  // 1. Cargar productos al iniciar
+  const navigate = useNavigate();
+
+  // Datos de sesión
+  const isAuth = !!localStorage.getItem("jwt_token");
+  const username = localStorage.getItem("username");
+
+  // 1. Cargar productos desde la Base de Datos al iniciar
   useEffect(() => {
     const fetchProductos = async () => {
       try {
@@ -25,10 +32,9 @@ function Home() {
     fetchProductos();
   }, []);
 
-  // 2. Función para Agrupar productos por Categoría
-  // Esto transforma una lista plana en un objeto: { "Consolas": [...], "Juegos": [...] }
+  // 2. Agrupar productos por Categoría
   const productosPorCategoria = productos.reduce((acc, producto) => {
-    const categoria = producto.categoria || "General"; // Si no tiene categoría, va a "General"
+    const categoria = producto.categoria || "General";
     if (!acc[categoria]) {
       acc[categoria] = [];
     }
@@ -36,52 +42,74 @@ function Home() {
     return acc;
   }, {});
 
-  // Función simple para agregar al carrito (Simulación)
-  // Aquí luego conectarás tu lógica real de carrito
-  const handleAgregar = (prod) => {
-    alert(`¡Has agregado "${prod.nombre}" al carrito! 🛒`);
-    // Tip: Aquí podrías guardar en localStorage o Context
+  // --- LÓGICA DE AGREGAR AL CARRITO ---
+  const handleAccionBoton = (prod) => {
+    if (!isAuth) {
+      if (
+        window.confirm(
+          "🔒 Necesitas iniciar sesión para comprar. ¿Ir al Login?"
+        )
+      ) {
+        navigate("/login");
+      }
+    } else {
+      // A. Definir clave única del usuario
+      const storageKey = `carrito_${username}`;
+
+      // B. Leer carrito actual
+      const carritoActual = JSON.parse(localStorage.getItem(storageKey)) || [];
+
+      // C. Verificar si ya existe para sumar cantidad
+      const existe = carritoActual.find((item) => item.id === prod.id);
+
+      let nuevoCarrito;
+      if (existe) {
+        // Si existe, aumentamos la cantidad
+        nuevoCarrito = carritoActual.map((item) =>
+          item.id === prod.id
+            ? { ...item, cantidad: (item.cantidad || 1) + 1 }
+            : item
+        );
+      } else {
+        // Si no existe, lo agregamos con cantidad 1
+        nuevoCarrito = [...carritoActual, { ...prod, cantidad: 1 }];
+      }
+
+      // D. Guardar en LocalStorage
+      localStorage.setItem(storageKey, JSON.stringify(nuevoCarrito));
+      alert(`✅ ¡"${prod.nombre}" agregado al carrito!`);
+    }
   };
 
   return (
     <>
-      {/* 1. Componente Hero al inicio */}
       <Hero />
-
-      {/* 2. Contenedor principal de la tienda */}
       <div className="container py-5">
-        {/* Estado de Carga */}
         {cargando && (
           <div className="text-center py-5">
             <div className="spinner-border text-primary" role="status"></div>
-            <p className="mt-2 text-muted">Cargando las mejores ofertas...</p>
+            <p className="mt-2 text-muted">Cargando catálogo...</p>
           </div>
         )}
 
-        {/* Estado de Error */}
         {error && (
           <div className="alert alert-danger text-center">⚠️ {error}</div>
         )}
 
-        {/* 3. Renderizado de Productos por Categoría */}
         {!cargando &&
           !error &&
           Object.keys(productosPorCategoria).map((categoria) => (
             <div key={categoria} className="mb-5">
-              {/* Título de la Categoría */}
               <h2 className="border-bottom border-secondary pb-2 mb-4 text-white">
                 <span className="text-warning">⚡</span> {categoria}
               </h2>
-
-              {/* Grid de Productos */}
               <div className="row row-cols-1 row-cols-md-2 row-cols-lg-4 g-4">
                 {productosPorCategoria[categoria].map((prod) => (
                   <div className="col" key={prod.id}>
                     <div className="card h-100 bg-dark text-white border-secondary shadow-sm hover-effect">
-                      {/* Imagen del Producto */}
                       <div
                         style={{ height: "200px", overflow: "hidden" }}
-                        className="d-flex align-items-center justify-content-center bg-secondary bg-opacity-25"
+                        className="d-flex align-items-center justify-content-center bg-secondary bg-opacity-25 position-relative"
                       >
                         {prod.imagen ? (
                           <img
@@ -93,39 +121,61 @@ function Home() {
                               height: "100%",
                               width: "100%",
                             }}
+                            onError={(e) => {
+                              e.target.style.display = "none";
+                              e.target.nextSibling.style.display = "block";
+                            }}
                           />
-                        ) : (
-                          <span style={{ fontSize: "3rem" }}>🎮</span>
+                        ) : null}
+                        <span
+                          style={{
+                            fontSize: "3rem",
+                            display: prod.imagen ? "none" : "block",
+                          }}
+                        >
+                          🎮
+                        </span>
+
+                        {prod.stock <= 0 && (
+                          <div className="position-absolute top-0 end-0 bg-danger text-white px-2 py-1 m-2 rounded small fw-bold">
+                            AGOTADO
+                          </div>
                         )}
                       </div>
 
                       <div className="card-body d-flex flex-column">
-                        <h5 className="card-title text-truncate">
+                        <h5
+                          className="card-title text-truncate"
+                          title={prod.nombre}
+                        >
                           {prod.nombre}
                         </h5>
-                        <p className="card-text text-muted small text-truncate">
-                          ID: {prod.id}
-                        </p>
 
                         <div className="mt-auto">
                           <div className="d-flex justify-content-between align-items-center mb-3">
                             <span className="fs-5 fw-bold text-warning">
                               ${prod.precio.toLocaleString()}
                             </span>
-                            {prod.stock > 0 ? (
-                              <span className="badge bg-success">En Stock</span>
-                            ) : (
-                              <span className="badge bg-danger">Agotado</span>
-                            )}
+                            <span
+                              className={`badge ${
+                                prod.stock > 0 ? "bg-success" : "bg-secondary"
+                              }`}
+                            >
+                              Stock: {prod.stock}
+                            </span>
                           </div>
 
                           <button
-                            className="btn btn-primary w-100 fw-bold"
-                            onClick={() => handleAgregar(prod)}
+                            className={`btn w-100 fw-bold ${
+                              isAuth ? "btn-primary" : "btn-outline-light"
+                            }`}
+                            onClick={() => handleAccionBoton(prod)}
                             disabled={prod.stock <= 0}
                           >
                             {prod.stock > 0
-                              ? "Añadir al Carrito 🛒"
+                              ? isAuth
+                                ? "Añadir al Carrito 🛒"
+                                : "Inicia Sesión para Comprar"
                               : "Sin Stock"}
                           </button>
                         </div>
@@ -136,14 +186,6 @@ function Home() {
               </div>
             </div>
           ))}
-
-        {/* Mensaje si no hay productos */}
-        {!cargando && productos.length === 0 && (
-          <div className="text-center py-5 text-muted">
-            <h3>Aún no hay productos en la tienda.</h3>
-            <p>Ve al Panel Admin para agregar el primero.</p>
-          </div>
-        )}
       </div>
     </>
   );
