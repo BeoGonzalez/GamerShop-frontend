@@ -32,7 +32,6 @@ function ProductoList({ productos, onEliminar }) {
             <tr key={prod.id}>
               <td>
                 <div className="d-flex align-items-center">
-                  {/* Si tienes imagen, la mostramos, si no, un icono */}
                   {prod.imagen ? (
                     <img
                       src={prod.imagen}
@@ -51,8 +50,9 @@ function ProductoList({ productos, onEliminar }) {
                 </div>
               </td>
               <td>
+                {/* CORRECCIÓN: Accedemos a prod.categoria.nombre */}
                 <span className="badge bg-secondary">
-                  {prod.categoria || "General"}
+                  {prod.categoria ? prod.categoria.nombre : "General"}
                 </span>
               </td>
               <td className="text-end text-warning fw-bold">
@@ -70,7 +70,9 @@ function ProductoList({ productos, onEliminar }) {
                   className="btn btn-sm btn-outline-danger"
                   onClick={() => onEliminar(prod.id)}
                   title="Eliminar producto"
-                ></button>
+                >
+                  🗑️
+                </button>
               </td>
             </tr>
           ))}

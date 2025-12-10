@@ -2,10 +2,10 @@ import React, { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import axios from "axios";
 
-// Recibimos la prop 'onLoginSuccess' desde App.js
-const Login = ({ onLoginSuccess }) => {
-  const API_URL = "https://gamershop-backend-1.onrender.com/auth";
+// Definimos la URL Base del Backend aquí mismo para asegurar la conexión directa
+const API_BASE_URL = "https://gamershop-backend-1.onrender.com";
 
+const Login = ({ onLoginSuccess }) => {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
@@ -18,21 +18,35 @@ const Login = ({ onLoginSuccess }) => {
     setLoading(true);
 
     try {
-      // 1. Petición al Backend
-      const response = await axios.post(`${API_URL}/login`, {
+      // 1. Petición Directa con Axios
+      // Concatenamos la URL base con el endpoint específico
+      const response = await axios.post(`${API_BASE_URL}/auth/login`, {
         username: username,
         password: password,
       });
 
-      // 2. Desempaquetar el JSON (Token + Rol)
-      const { token, rol } = response.data;
+      console.log("Respuesta del login:", response.data);
 
-      // 3. Guardar TODO en localStorage
+      // 2. Validación y Extracción de Datos
+      const data = response.data;
+
+      // Adaptar según lo que devuelve tu backend.
+      // Prioridad: 1. data.token (JSON), 2. data (String plano)
+      const token = data.token || (typeof data === "string" ? data : null);
+
+      // Si el rol no viene en el JSON, asignamos "USER" por defecto
+      const rol = data.rol || "USER";
+
+      if (!token) {
+        throw new Error("No se recibió un token válido del servidor.");
+      }
+
+      // 3. Guardar en LocalStorage (Persistencia)
       localStorage.setItem("jwt_token", token);
       localStorage.setItem("username", username);
       localStorage.setItem("rol", rol);
 
-      // 4. Avisar a App.js
+      // 4. Actualizar estado global en App.js
       if (onLoginSuccess) {
         onLoginSuccess(username, rol);
       }
@@ -40,17 +54,24 @@ const Login = ({ onLoginSuccess }) => {
       // 5. Redirigir al Home
       navigate("/");
     } catch (err) {
-      console.error(err);
+      console.error("Error en login:", err);
+
+      // Manejo de errores detallado
       if (err.response) {
-        if (err.response.status === 401) {
-          setError("Credenciales incorrectas.");
+        // El servidor respondió con un código de error (4xx, 5xx)
+        if (err.response.status === 401 || err.response.status === 403) {
+          setError("Usuario o contraseña incorrectos.");
         } else {
           setError(`Error del servidor: ${err.response.status}`);
         }
       } else if (err.request) {
-        setError("No se pudo conectar con el servidor. Intenta de nuevo.");
+        // No hubo respuesta (Servidor caído, dormido o problema de red/CORS)
+        setError(
+          "No se pudo conectar con el servidor. Verifica tu internet o espera un momento si Render está despertando."
+        );
       } else {
-        setError("Ocurrió un error inesperado.");
+        // Error al configurar la petición
+        setError("Ocurrió un error inesperado. Intenta de nuevo.");
       }
     } finally {
       setLoading(false);
@@ -58,17 +79,13 @@ const Login = ({ onLoginSuccess }) => {
   };
 
   return (
-    // CAMBIO 1: Usamos 'bg-body-tertiary' en lugar de 'bg-dark'.
-    // Esto será gris claro en modo Light y gris oscuro en modo Dark.
+    // Contenedor con estilos de Bootstrap adaptables (bg-body-tertiary se adapta al tema)
     <div className="d-flex justify-content-center align-items-center min-vh-100 bg-body-tertiary">
-      {/* CAMBIO 2: Quitamos 'text-white' y estilos inline de color. 
-          La clase 'card' de Bootstrap 5.3 ya maneja el cambio de color automáticamente. */}
       <div
         className="card p-4 shadow-lg"
         style={{
           width: "100%",
           maxWidth: "400px",
-          // Eliminamos el backgroundColor fijo para que Bootstrap decida
         }}
       >
         <div className="card-body">
@@ -77,8 +94,6 @@ const Login = ({ onLoginSuccess }) => {
           <form onSubmit={handleLogin}>
             <div className="mb-3 text-start">
               <label className="form-label fw-bold">Usuario</label>
-              {/* CAMBIO 3: Quitamos 'bg-secondary text-white border-0'. 
-                  Usamos solo 'form-control', que se adapta al tema. */}
               <input
                 type="text"
                 className="form-control"
@@ -86,6 +101,7 @@ const Login = ({ onLoginSuccess }) => {
                 onChange={(e) => setUsername(e.target.value)}
                 required
                 placeholder="Tu usuario"
+                autoComplete="username"
               />
             </div>
 
@@ -98,6 +114,7 @@ const Login = ({ onLoginSuccess }) => {
                 onChange={(e) => setPassword(e.target.value)}
                 required
                 placeholder="********"
+                autoComplete="current-password"
               />
             </div>
 
@@ -124,11 +141,11 @@ const Login = ({ onLoginSuccess }) => {
 
             {error && (
               <div
-                className="alert alert-danger mt-3 d-flex align-items-center p-2"
+                className="alert alert-danger mt-3 d-flex align-items-center p-2 small"
                 role="alert"
               >
                 <span className="fs-5 me-2">⚠️</span>
-                <div className="small fw-bold">{error}</div>
+                <div>{error}</div>
               </div>
             )}
           </form>
