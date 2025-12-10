@@ -26,14 +26,14 @@ function Carrito() {
     }
   });
 
-  const [productosStock, setProductosStock] = useState([]); // Stock real para validar
+  const [productosStock, setProductosStock] = useState([]);
   const [total, setTotal] = useState(0);
   const [boleta, setBoleta] = useState(null);
   const [procesando, setProcesando] = useState(false);
 
   // 3. Efectos
 
-  // Cargar stock real del backend (Productos)
+  // Cargar stock real del backend
   const fetchStock = useCallback(async () => {
     try {
       const response = await fetch(`${API_URL}/productos`);
@@ -50,7 +50,7 @@ function Carrito() {
     fetchStock();
   }, [fetchStock]);
 
-  // Calcular Total y Guardar cambios locales
+  // Calcular Total, Guardar cambios locales y Notificar Navbar
   useEffect(() => {
     const nuevoTotal = carrito.reduce((acc, item) => {
       const cantidad = item.cantidad || 1;
@@ -60,6 +60,8 @@ function Carrito() {
 
     if (storageKey) {
       localStorage.setItem(storageKey, JSON.stringify(carrito));
+      // 📢 AVISAR AL NAVBAR CADA VEZ QUE CAMBIE EL CARRITO
+      window.dispatchEvent(new Event("cartUpdated"));
     }
   }, [carrito, storageKey]);
 
@@ -78,11 +80,8 @@ function Carrito() {
     setCarrito((prev) =>
       prev.map((item) => {
         if (item.id === id) {
-          // Validación contra stock real
           const prodReal = productosStock.find((p) => p.id === id);
-          // Si no encontramos el producto real, usamos un fallback alto
           const maxStock = prodReal ? prodReal.stock : 999;
-
           const newQty = (item.cantidad || 1) + amount;
 
           if (newQty < 1) return item;
@@ -97,14 +96,12 @@ function Carrito() {
     );
   };
 
-  // --- PROCESAR COMPRA (Conexión con OrdenController) ---
+  // --- PROCESAR COMPRA ---
   const procesarCompra = async () => {
     if (carrito.length === 0) return;
     setProcesando(true);
 
     try {
-      // Preparar el DTO para el backend: username + items[{id, cantidad}]
-      // Esto coincide con tu CompraRequest.java
       const ordenData = {
         username: username,
         items: carrito.map((item) => ({
@@ -113,7 +110,6 @@ function Carrito() {
         })),
       };
 
-      // Petición POST a /ordenes/comprar
       const response = await fetch(`${API_URL}/ordenes/comprar`, {
         method: "POST",
         headers: {
@@ -128,7 +124,6 @@ function Carrito() {
         throw new Error(errorText);
       }
 
-      // Éxito: Generar Boleta Visual
       const nuevaBoleta = {
         idOrden: Math.floor(Math.random() * 900000) + 100000,
         fecha: new Date().toLocaleDateString(),
@@ -139,12 +134,8 @@ function Carrito() {
       };
 
       setBoleta(nuevaBoleta);
+      setCarrito([]); // Al vaciar el carrito, el useEffect disparará 'cartUpdated' y el contador será 0
 
-      // Limpiar carrito
-      setCarrito([]);
-      if (storageKey) localStorage.removeItem(storageKey);
-
-      // Actualizar stock local
       fetchStock();
     } catch (error) {
       console.error("Error en compra:", error);
@@ -185,7 +176,6 @@ function Carrito() {
       </h2>
 
       <div className="row g-5">
-        {/* LISTA DE PRODUCTOS */}
         <div className="col-lg-8">
           {carrito.length === 0 ? (
             <div className="alert alert-secondary text-center py-5">
@@ -200,7 +190,6 @@ function Carrito() {
               {carrito.map((item) => (
                 <div key={item.id} className="card shadow-sm border">
                   <div className="card-body d-flex align-items-center flex-wrap gap-3">
-                    {/* Imagen */}
                     <div
                       className="bg-body-secondary rounded d-flex align-items-center justify-content-center"
                       style={{
@@ -216,7 +205,8 @@ function Carrito() {
                           style={{
                             width: "100%",
                             height: "100%",
-                            objectFit: "cover",
+                            objectFit: "contain", // IMAGEN COMPLETA
+                            padding: "5px",
                           }}
                         />
                       ) : (
@@ -224,7 +214,6 @@ function Carrito() {
                       )}
                     </div>
 
-                    {/* Info */}
                     <div className="flex-grow-1">
                       <div className="d-flex justify-content-between align-items-start mb-1">
                         <h5
@@ -243,7 +232,6 @@ function Carrito() {
                         </button>
                       </div>
                       <small className="text-muted d-block">
-                        {/* Manejo seguro de la categoría (si es objeto o string) */}
                         {item.categoria?.nombre || item.categoria || "General"}
                       </small>
                       <div className="fw-bold mt-1">
@@ -254,7 +242,6 @@ function Carrito() {
                       </div>
                     </div>
 
-                    {/* Controles de Cantidad */}
                     <div className="d-flex align-items-center border rounded px-2">
                       <button
                         className="btn btn-sm btn-link text-decoration-none text-body"
@@ -262,14 +249,12 @@ function Carrito() {
                       >
                         -
                       </button>
-
                       <span
                         className="mx-3 fw-bold"
                         style={{ minWidth: "20px", textAlign: "center" }}
                       >
                         {item.cantidad || 1}
                       </span>
-
                       <button
                         className="btn btn-sm btn-link text-decoration-none text-body"
                         onClick={() => updateQuantity(item.id, 1)}
@@ -278,7 +263,6 @@ function Carrito() {
                       </button>
                     </div>
 
-                    {/* Subtotal */}
                     <div
                       className="text-end ms-auto"
                       style={{ minWidth: "90px" }}
@@ -295,7 +279,6 @@ function Carrito() {
           )}
         </div>
 
-        {/* COLUMNA DERECHA: RESUMEN DE PAGO */}
         {carrito.length > 0 && (
           <div className="col-lg-4">
             <div className="card shadow-sm sticky-top" style={{ top: "100px" }}>
@@ -341,7 +324,6 @@ function Carrito() {
         )}
       </div>
 
-      {/* --- MODAL BOLETA DE VENTA (Overlay) --- */}
       {boleta && (
         <div
           className="position-fixed top-0 start-0 w-100 h-100 d-flex justify-content-center align-items-center"

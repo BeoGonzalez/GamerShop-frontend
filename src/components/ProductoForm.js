@@ -1,28 +1,30 @@
 import React, { useState } from "react";
 
-// Recibimos 'categoriasDisponibles' desde el padre (AdminPanel)
-// Le asignamos un valor por defecto [] para evitar errores si es null/undefined
 function ProductoForm({ onGuardar, categoriasDisponibles = [] }) {
-  // Estado inicial del formulario
   const [producto, setProducto] = useState({
     nombre: "",
-    categoriaId: "", // Guardamos el ID de la categoría
+    categoriaId: "",
     precio: "",
     stock: "",
     imagen: "",
   });
 
+  // Estado local para manejar errores de carga de imagen en el preview
+  const [imagenInvalida, setImagenInvalida] = useState(false);
+
   const handleChange = (e) => {
-    setProducto({
-      ...producto,
-      [e.target.name]: e.target.value,
-    });
+    const { name, value } = e.target;
+    setProducto({ ...producto, [name]: value });
+
+    // Si el usuario cambia la URL, reseteamos el error de imagen
+    if (name === "imagen") {
+      setImagenInvalida(false);
+    }
   };
 
   const handleSubmit = (e) => {
     e.preventDefault();
 
-    // Validaciones simples
     if (
       !producto.nombre ||
       !producto.precio ||
@@ -33,13 +35,11 @@ function ProductoForm({ onGuardar, categoriasDisponibles = [] }) {
       return;
     }
 
-    // Construir el objeto JSON para el backend
     const productoAEnviar = {
       nombre: producto.nombre,
       precio: parseFloat(producto.precio),
       stock: parseInt(producto.stock),
       imagen: producto.imagen,
-      // La clave es enviar un objeto 'categoria' con su 'id'
       categoria: {
         id: parseInt(producto.categoriaId),
       },
@@ -47,7 +47,6 @@ function ProductoForm({ onGuardar, categoriasDisponibles = [] }) {
 
     onGuardar(productoAEnviar);
 
-    // Limpiar formulario
     setProducto({
       nombre: "",
       categoriaId: "",
@@ -55,6 +54,7 @@ function ProductoForm({ onGuardar, categoriasDisponibles = [] }) {
       stock: "",
       imagen: "",
     });
+    setImagenInvalida(false);
   };
 
   return (
@@ -101,25 +101,22 @@ function ProductoForm({ onGuardar, categoriasDisponibles = [] }) {
         </div>
       </div>
 
-      {/* --- SECCIÓN CATEGORÍA CORREGIDA --- */}
+      {/* CATEGORÍA */}
       <div className="mb-3">
         <label className="form-label small fw-bold">Categoría</label>
-
         <select
           name="categoriaId"
           className={`form-select ${!producto.categoriaId ? "text-muted" : ""}`}
           value={producto.categoriaId}
           onChange={handleChange}
           required
-          disabled={categoriasDisponibles.length === 0} // Deshabilitar si no hay datos
+          disabled={categoriasDisponibles.length === 0}
         >
           <option value="">
             {categoriasDisponibles.length === 0
               ? "Cargando categorías..."
               : "Selecciona una categoría..."}
           </option>
-
-          {/* Mapeo seguro: verificamos que 'categoriasDisponibles' sea un array */}
           {Array.isArray(categoriasDisponibles) &&
             categoriasDisponibles.map((cat) => (
               <option key={cat.id} value={cat.id}>
@@ -127,17 +124,9 @@ function ProductoForm({ onGuardar, categoriasDisponibles = [] }) {
               </option>
             ))}
         </select>
-
-        {/* Mensaje de ayuda si la lista está vacía después de cargar */}
-        {categoriasDisponibles.length === 0 && (
-          <div className="form-text text-warning small mt-1">
-            ⚠️ No se encontraron categorías. Crea algunas en la base de datos o
-            espera a que carguen.
-          </div>
-        )}
       </div>
 
-      {/* IMAGEN (OPCIONAL) */}
+      {/* --- SECCIÓN DE IMAGEN MEJORADA --- */}
       <div className="mb-3">
         <label className="form-label small fw-bold">
           URL Imagen (Opcional)
@@ -148,15 +137,35 @@ function ProductoForm({ onGuardar, categoriasDisponibles = [] }) {
           className="form-control"
           value={producto.imagen}
           onChange={handleChange}
-          placeholder="https://..."
+          placeholder="Ej: https://i.imgur.com/tu-imagen.jpg"
         />
+
+        {/* VISTA PREVIA */}
+        {producto.imagen && !imagenInvalida && (
+          <div className="mt-3 text-center border rounded p-2 bg-light">
+            <p className="small text-muted mb-1">Vista Previa:</p>
+            <img
+              src={producto.imagen}
+              alt="Vista previa"
+              className="img-fluid rounded shadow-sm"
+              style={{ maxHeight: "150px", objectFit: "contain" }}
+              onError={() => setImagenInvalida(true)}
+            />
+          </div>
+        )}
+
+        {imagenInvalida && producto.imagen && (
+          <div className="mt-2 text-danger small">
+            ⚠️ No se pudo cargar la imagen. Verifica que la URL sea directa
+            (terminada en .jpg, .png, etc).
+          </div>
+        )}
       </div>
 
-      {/* BOTÓN GUARDAR */}
       <button
         type="submit"
         className="btn btn-primary w-100 fw-bold"
-        disabled={categoriasDisponibles.length === 0} // Evitar enviar sin categoría
+        disabled={categoriasDisponibles.length === 0}
       >
         GUARDAR PRODUCTO
       </button>

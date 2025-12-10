@@ -32,9 +32,13 @@ function Home() {
     fetchProductos();
   }, []);
 
-  // 2. Agrupar productos por Categoría
+  // 2. Agrupar productos por Categoría (CORREGIDO)
   const productosPorCategoria = productos.reduce((acc, producto) => {
-    const categoria = producto.categoria || "General";
+    // AQUÍ ESTABA EL ERROR DE "OBJECT OBJECT"
+    // Antes: const categoria = producto.categoria || "General";
+    // Ahora: Accedemos a .nombre para obtener el texto
+    const categoria = producto.categoria?.nombre || "Productos";
+
     if (!acc[categoria]) {
       acc[categoria] = [];
     }
@@ -53,30 +57,32 @@ function Home() {
         navigate("/login");
       }
     } else {
-      // A. Definir clave única del usuario
       const storageKey = `carrito_${username}`;
-
-      // B. Leer carrito actual
       const carritoActual = JSON.parse(localStorage.getItem(storageKey)) || [];
-
-      // C. Verificar si ya existe para sumar cantidad
       const existe = carritoActual.find((item) => item.id === prod.id);
+
+      // --- VALIDACIÓN DE STOCK ---
+      const cantidadEnCarrito = existe ? existe.cantidad || 1 : 0;
+      if (cantidadEnCarrito + 1 > prod.stock) {
+        alert(
+          `⚠️ No puedes agregar más items. Stock disponible: ${prod.stock}`
+        );
+        return;
+      }
 
       let nuevoCarrito;
       if (existe) {
-        // Si existe, aumentamos la cantidad
         nuevoCarrito = carritoActual.map((item) =>
           item.id === prod.id
             ? { ...item, cantidad: (item.cantidad || 1) + 1 }
             : item
         );
       } else {
-        // Si no existe, lo agregamos con cantidad 1
         nuevoCarrito = [...carritoActual, { ...prod, cantidad: 1 }];
       }
 
-      // D. Guardar en LocalStorage
       localStorage.setItem(storageKey, JSON.stringify(nuevoCarrito));
+      window.dispatchEvent(new Event("cartUpdated"));
       alert(`✅ ¡"${prod.nombre}" agregado al carrito!`);
     }
   };
@@ -100,16 +106,23 @@ function Home() {
           !error &&
           Object.keys(productosPorCategoria).map((categoria) => (
             <div key={categoria} className="mb-5">
-              <h2 className="border-bottom border-secondary pb-2 mb-4 text-white">
+              {/* TÍTULO CENTRADO Y CORREGIDO */}
+              <h2 className="border-bottom border-secondary pb-2 mb-4 text-center text-body">
                 <span className="text-warning">⚡</span> {categoria}
               </h2>
+
               <div className="row row-cols-1 row-cols-md-2 row-cols-lg-4 g-4">
                 {productosPorCategoria[categoria].map((prod) => (
                   <div className="col" key={prod.id}>
-                    <div className="card h-100 bg-dark text-white border-secondary shadow-sm hover-effect">
+                    {/* CORRECCIÓN DE MODO OSCURO:
+                        Quitamos 'bg-dark text-white' y dejamos que Bootstrap maneje los colores 
+                        con la clase 'card' por defecto.
+                    */}
+                    <div className="card h-100 shadow-sm hover-effect border-secondary-subtle">
+                      {/* Imagen */}
                       <div
                         style={{ height: "200px", overflow: "hidden" }}
-                        className="d-flex align-items-center justify-content-center bg-secondary bg-opacity-25 position-relative"
+                        className="d-flex align-items-center justify-content-center bg-secondary bg-opacity-10 position-relative"
                       >
                         {prod.imagen ? (
                           <img
@@ -117,9 +130,10 @@ function Home() {
                             className="card-img-top"
                             alt={prod.nombre}
                             style={{
-                              objectFit: "cover",
+                              objectFit: "contain",
                               height: "100%",
                               width: "100%",
+                              padding: "10px",
                             }}
                             onError={(e) => {
                               e.target.style.display = "none";
@@ -167,7 +181,7 @@ function Home() {
 
                           <button
                             className={`btn w-100 fw-bold ${
-                              isAuth ? "btn-primary" : "btn-outline-light"
+                              isAuth ? "btn-primary" : "btn-outline-primary"
                             }`}
                             onClick={() => handleAccionBoton(prod)}
                             disabled={prod.stock <= 0}

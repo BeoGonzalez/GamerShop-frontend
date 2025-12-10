@@ -1,9 +1,10 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import Tema from "./Tema";
 
 function Navbar({ isAuth, role, username, onLogout }) {
   const [isOpen, setIsOpen] = useState(false);
+  const [cantidadCarrito, setCantidadCarrito] = useState(0); // Estado para el contador
   const navigate = useNavigate();
 
   const handleLogout = () => {
@@ -15,18 +16,57 @@ function Navbar({ isAuth, role, username, onLogout }) {
   const toggleMenu = () => setIsOpen(!isOpen);
   const closeMenu = () => setIsOpen(false);
 
+  // --- LÓGICA DEL CONTADOR ---
+  useEffect(() => {
+    // Función para leer y contar items del localStorage
+    const actualizarContador = () => {
+      if (!isAuth || !username) {
+        setCantidadCarrito(0);
+        return;
+      }
+
+      const storageKey = `carrito_${username}`;
+      const carritoGuardado = localStorage.getItem(storageKey);
+
+      if (carritoGuardado) {
+        try {
+          const items = JSON.parse(carritoGuardado);
+          // Sumamos las cantidades individuales de cada producto
+          const total = items.reduce(
+            (acc, item) => acc + (item.cantidad || 1),
+            0
+          );
+          setCantidadCarrito(total);
+        } catch (e) {
+          console.error("Error leyendo carrito", e);
+          setCantidadCarrito(0);
+        }
+      } else {
+        setCantidadCarrito(0);
+      }
+    };
+
+    // 1. Ejecutar al iniciar
+    actualizarContador();
+
+    // 2. Escuchar evento personalizado "cartUpdated" (para actualizaciones en vivo)
+    window.addEventListener("cartUpdated", actualizarContador);
+    // 3. Escuchar evento "storage" (por si tienes varias pestañas abiertas)
+    window.addEventListener("storage", actualizarContador);
+
+    // Limpieza al desmontar
+    return () => {
+      window.removeEventListener("cartUpdated", actualizarContador);
+      window.removeEventListener("storage", actualizarContador);
+    };
+  }, [isAuth, username]);
+
   return (
     <nav className="navbar navbar-expand-lg fixed-top shadow-sm bg-body-tertiary">
-      {/* Estilos para la animación del texto. 
-          Lo definimos aquí para mantener todo en un solo archivo, 
-          pero idealmente iría en tu CSS global.
-      */}
       <style>
         {`
           @keyframes shine {
-            to {
-              background-position: 200% center;
-            }
+            to { background-position: 200% center; }
           }
           .gamer-text {
             background: linear-gradient(to right, #00d2ff 20%, #3a7bd5 40%, #ff00ff 60%, #00d2ff 80%);
@@ -39,41 +79,39 @@ function Navbar({ isAuth, role, username, onLogout }) {
             font-weight: 800;
             letter-spacing: -0.5px;
           }
+          /* Animación para el contador */
+          .badge-counter {
+            transition: transform 0.2s;
+          }
+          .badge-counter:hover {
+            transform: scale(1.2);
+          }
         `}
       </style>
 
       <div className="container">
-        {/* 1. LOGO CON EFECTO GRADIENTE ANIMADO */}
         <Link
           className="navbar-brand fw-bold fs-4 d-flex align-items-center gap-2"
           to="/"
           onClick={closeMenu}
         >
           <span style={{ fontSize: "1.5rem" }}>🎮</span>
-
-          {/* APLICAMOS LA CLASE ANIMADA AQUÍ */}
           <span className="gamer-text">GamerShop</span>
         </Link>
 
-        {/* 2. BOTÓN HAMBURGUESA */}
         <button
           className="navbar-toggler"
           type="button"
           onClick={toggleMenu}
-          aria-controls="navbarNav"
-          aria-expanded={isOpen}
-          aria-label="Toggle navigation"
           style={{ border: "none" }}
         >
           <span className="navbar-toggler-icon"></span>
         </button>
 
-        {/* 3. CONTENIDO DEL MENÚ */}
         <div
           className={`collapse navbar-collapse ${isOpen ? "show" : ""}`}
           id="navbarNav"
         >
-          {/* Enlaces Izquierda */}
           <ul className="navbar-nav me-auto mb-2 mb-lg-0">
             <li className="nav-item">
               <Link className="nav-link" to="/" onClick={closeMenu}>
@@ -94,16 +132,24 @@ function Navbar({ isAuth, role, username, onLogout }) {
             {isAuth && (
               <li className="nav-item">
                 <Link
-                  className="nav-link text-info fw-bold"
+                  className="nav-link text-info fw-bold position-relative"
                   to="/carrito"
                   onClick={closeMenu}
                 >
                   🛒 Carrito
+                  {/* --- AQUÍ ESTÁ EL CONTADOR --- */}
+                  {cantidadCarrito > 0 && (
+                    <span className="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger badge-counter">
+                      {cantidadCarrito}
+                      <span className="visually-hidden">
+                        productos en carrito
+                      </span>
+                    </span>
+                  )}
                 </Link>
               </li>
             )}
 
-            {/* Link Admin */}
             {isAuth && role === "ADMIN" && (
               <li className="nav-item ms-lg-2 mt-2 mt-lg-0">
                 <Link
@@ -118,9 +164,7 @@ function Navbar({ isAuth, role, username, onLogout }) {
             )}
           </ul>
 
-          {/* Botones Derecha */}
           <div className="d-flex flex-column flex-lg-row align-items-lg-center gap-3 mt-3 mt-lg-0">
-            {/* BOTÓN DE TEMA */}
             <div className="align-self-start align-self-lg-center">
               <Tema />
             </div>
@@ -135,7 +179,6 @@ function Navbar({ isAuth, role, username, onLogout }) {
               </Link>
             ) : (
               <>
-                {/* Texto de Bienvenida */}
                 <div className="text-end lh-1">
                   <small
                     className="d-block text-secondary text-uppercase fw-bold"
