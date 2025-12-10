@@ -1,10 +1,12 @@
 import React, { useState } from "react";
 
+// Recibimos 'categoriasDisponibles' desde el padre (AdminPanel)
+// Le asignamos un valor por defecto [] para evitar errores si es null/undefined
 function ProductoForm({ onGuardar, categoriasDisponibles = [] }) {
-  // Estado inicial
+  // Estado inicial del formulario
   const [producto, setProducto] = useState({
     nombre: "",
-    categoriaId: "", // Guardamos el ID de la categoría seleccionada
+    categoriaId: "", // Guardamos el ID de la categoría
     precio: "",
     stock: "",
     imagen: "",
@@ -19,6 +21,8 @@ function ProductoForm({ onGuardar, categoriasDisponibles = [] }) {
 
   const handleSubmit = (e) => {
     e.preventDefault();
+
+    // Validaciones simples
     if (
       !producto.nombre ||
       !producto.precio ||
@@ -29,13 +33,13 @@ function ProductoForm({ onGuardar, categoriasDisponibles = [] }) {
       return;
     }
 
-    // Construimos el objeto exacto que quiere Spring Boot (JPA)
+    // Construir el objeto JSON para el backend
     const productoAEnviar = {
       nombre: producto.nombre,
       precio: parseFloat(producto.precio),
       stock: parseInt(producto.stock),
       imagen: producto.imagen,
-      // La clave es enviar un objeto con el ID para la relación
+      // La clave es enviar un objeto 'categoria' con su 'id'
       categoria: {
         id: parseInt(producto.categoriaId),
       },
@@ -55,6 +59,7 @@ function ProductoForm({ onGuardar, categoriasDisponibles = [] }) {
 
   return (
     <form onSubmit={handleSubmit}>
+      {/* NOMBRE */}
       <div className="mb-3">
         <label className="form-label small fw-bold">Nombre del Producto</label>
         <input
@@ -67,6 +72,7 @@ function ProductoForm({ onGuardar, categoriasDisponibles = [] }) {
         />
       </div>
 
+      {/* PRECIO Y STOCK */}
       <div className="row">
         <div className="col-6 mb-3">
           <label className="form-label small fw-bold">Precio</label>
@@ -78,6 +84,7 @@ function ProductoForm({ onGuardar, categoriasDisponibles = [] }) {
             onChange={handleChange}
             required
             min="0"
+            step="0.01"
           />
         </div>
         <div className="col-6 mb-3">
@@ -94,31 +101,43 @@ function ProductoForm({ onGuardar, categoriasDisponibles = [] }) {
         </div>
       </div>
 
+      {/* --- SECCIÓN CATEGORÍA CORREGIDA --- */}
       <div className="mb-3">
         <label className="form-label small fw-bold">Categoría</label>
+
         <select
           name="categoriaId"
-          className="form-select"
+          className={`form-select ${!producto.categoriaId ? "text-muted" : ""}`}
           value={producto.categoriaId}
           onChange={handleChange}
           required
+          disabled={categoriasDisponibles.length === 0} // Deshabilitar si no hay datos
         >
-          <option value="">Selecciona una categoría...</option>
-          {/* Mapeamos las categorías reales (objetos) */}
-          {categoriasDisponibles.map((cat) => (
-            <option key={cat.id} value={cat.id}>
-              {cat.nombre}
-            </option>
-          ))}
+          <option value="">
+            {categoriasDisponibles.length === 0
+              ? "Cargando categorías..."
+              : "Selecciona una categoría..."}
+          </option>
+
+          {/* Mapeo seguro: verificamos que 'categoriasDisponibles' sea un array */}
+          {Array.isArray(categoriasDisponibles) &&
+            categoriasDisponibles.map((cat) => (
+              <option key={cat.id} value={cat.id}>
+                {cat.nombre}
+              </option>
+            ))}
         </select>
+
+        {/* Mensaje de ayuda si la lista está vacía después de cargar */}
         {categoriasDisponibles.length === 0 && (
-          <div className="form-text text-danger">
-            No hay categorías cargadas. Crea algunas en la base de datos
-            primero.
+          <div className="form-text text-warning small mt-1">
+            ⚠️ No se encontraron categorías. Crea algunas en la base de datos o
+            espera a que carguen.
           </div>
         )}
       </div>
 
+      {/* IMAGEN (OPCIONAL) */}
       <div className="mb-3">
         <label className="form-label small fw-bold">
           URL Imagen (Opcional)
@@ -133,7 +152,12 @@ function ProductoForm({ onGuardar, categoriasDisponibles = [] }) {
         />
       </div>
 
-      <button type="submit" className="btn btn-primary w-100 fw-bold">
+      {/* BOTÓN GUARDAR */}
+      <button
+        type="submit"
+        className="btn btn-primary w-100 fw-bold"
+        disabled={categoriasDisponibles.length === 0} // Evitar enviar sin categoría
+      >
         GUARDAR PRODUCTO
       </button>
     </form>

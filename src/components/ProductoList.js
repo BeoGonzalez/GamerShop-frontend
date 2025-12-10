@@ -11,8 +11,8 @@ function ProductoList({ productos, onEliminar }) {
 
   return (
     <div className="table-responsive">
-      <table className="table table-dark table-hover align-middle mb-0">
-        <thead className="table-secondary">
+      <table className="table table-hover align-middle mb-0">
+        <thead className="table-light">
           <tr>
             <th scope="col">Producto</th>
             <th scope="col">Categoría</th>
@@ -46,21 +46,23 @@ function ProductoList({ productos, onEliminar }) {
                   ) : (
                     <span className="me-2 fs-4">🎮</span>
                   )}
-                  <span className="fw-bold">{prod.nombre}</span>
+                  <span className="fw-bold text-body">{prod.nombre}</span>
                 </div>
               </td>
               <td>
-                {/* CORRECCIÓN: Accedemos a prod.categoria.nombre */}
+                {/* CORRECCIÓN: Accedemos a prod.categoria.nombre con seguridad */}
                 <span className="badge bg-secondary">
-                  {prod.categoria ? prod.categoria.nombre : "General"}
+                  {prod.categoria
+                    ? prod.categoria.nombre || prod.categoria
+                    : "General"}
                 </span>
               </td>
-              <td className="text-end text-warning fw-bold">
+              <td className="text-end text-success fw-bold">
                 ${prod.precio.toLocaleString()}
               </td>
               <td className="text-center">
                 {prod.stock > 0 ? (
-                  <span className="badge bg-success">{prod.stock} un.</span>
+                  <span className="badge bg-success">{prod.stock}</span>
                 ) : (
                   <span className="badge bg-danger">Agotado</span>
                 )}

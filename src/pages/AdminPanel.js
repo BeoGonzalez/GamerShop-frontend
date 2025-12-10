@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from "react";
-// Asegúrate de que las rutas a tus componentes sean correctas
+// Asegúrate de que las rutas sean correctas
 import ProductoForm from "../components/ProductoForm";
 import ProductoList from "../components/ProductoList";
 
-// URL base de tu backend en Render
+// URL base de tu backend
 const API_URL = "https://gamershop-backend-1.onrender.com";
 
 function AdminPanel() {
@@ -12,7 +12,7 @@ function AdminPanel() {
   const [cargando, setCargando] = useState(false);
   const [error, setError] = useState(null);
 
-  // Helper para obtener los headers de autenticación
+  // Helper para headers con JWT
   const getAuthHeaders = () => {
     const token = localStorage.getItem("jwt_token");
     if (!token) return null;
@@ -22,7 +22,6 @@ function AdminPanel() {
     };
   };
 
-  // Manejo de errores de autenticación
   const handleAuthError = () => {
     alert(
       "⚠️ Sesión expirada o permisos insuficientes. Inicia sesión nuevamente."
@@ -31,7 +30,7 @@ function AdminPanel() {
     window.location.href = "/login";
   };
 
-  // Cargar datos al montar el componente
+  // Cargar Productos y Categorías al inicio
   useEffect(() => {
     const fetchData = async () => {
       setCargando(true);
@@ -39,7 +38,6 @@ function AdminPanel() {
 
       try {
         // 1. Cargar Categorías (desde CategoriaController)
-        // Esto permite que el formulario muestre las categorías reales
         try {
           const resCat = await fetch(`${API_URL}/categorias`);
           if (resCat.ok) {
@@ -47,10 +45,7 @@ function AdminPanel() {
             setCategorias(dataCat);
           }
         } catch (e) {
-          console.warn(
-            "No se pudieron cargar categorías (el endpoint podría no estar listo)",
-            e
-          );
+          console.warn("No se pudieron cargar categorías", e);
         }
 
         // 2. Cargar Productos (desde ProductoController)
@@ -127,7 +122,7 @@ function AdminPanel() {
       });
 
       if (response.status === 403) {
-        setProductos(backup); // Revertimos cambios si falla
+        setProductos(backup); // Revertimos cambios
         handleAuthError();
         return;
       }
@@ -139,7 +134,7 @@ function AdminPanel() {
     }
   };
 
-  // Cálculos para el dashboard
+  // Cálculos
   const totalItems = productos.length;
   const valorTotal = productos.reduce(
     (acc, item) => acc + item.precio * (item.stock || 0),
@@ -179,7 +174,7 @@ function AdminPanel() {
               <h5 className="m-0">⚡ Nuevo Producto</h5>
             </div>
             <div className="card-body">
-              {/* Pasamos las categorías reales para que el formulario las use */}
+              {/* Pasamos las categorías reales para el select */}
               <ProductoForm
                 onGuardar={guardarProducto}
                 categoriasDisponibles={categorias}
