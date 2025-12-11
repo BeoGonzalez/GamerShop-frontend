@@ -36,45 +36,55 @@ const StockEditor = ({ producto, onGuardarCambio }) => {
   };
 
   return (
-    <div className="d-flex align-items-center justify-content-center gap-2">
-      {/* CÁPSULA VERTICAL */}
-      <div className="stock-capsule">
-        {/* BOTÓN ARRIBA (SUMAR) */}
+    // 'position-relative' es vital aquí para que el botón flotante sepa dónde ubicarse
+    <div className="position-relative d-inline-flex align-items-center justify-content-center">
+      {/* CÁPSULA VERTICAL (CONTROLES) */}
+      <div className="d-flex flex-column align-items-center">
+        {/* BOTÓN ARRIBA */}
         <button
-          className="stock-btn-circle"
+          className="btn border-0 bg-transparent p-0 d-flex align-items-center justify-content-center text-secondary"
           onClick={handleSumar}
           title="Aumentar"
+          style={{ width: "24px", height: "24px" }}
         >
-          ▲
+          <i className="bx bx-chevron-up fs-4"></i>
         </button>
 
-        {/* INPUT EN MEDIO */}
+        {/* INPUT */}
         <input
           type="number"
-          className="stock-input-clean"
+          className="form-control border-0 bg-transparent text-center p-0 m-0 fw-bold"
+          style={{ width: "40px", boxShadow: "none" }}
           value={stockLocal}
           onChange={handleChangeInput}
         />
 
-        {/* BOTÓN ABAJO (RESTAR) */}
+        {/* BOTÓN ABAJO */}
         <button
-          className="stock-btn-circle"
+          className="btn border-0 bg-transparent p-0 d-flex align-items-center justify-content-center text-secondary"
           onClick={handleRestar}
           disabled={stockLocal <= 0}
           title="Disminuir"
+          style={{ width: "24px", height: "24px" }}
         >
-          ▼
+          <i className="bx bx-chevron-down fs-4"></i>
         </button>
       </div>
 
-      {/* BOTÓN FLOTANTE DE GUARDAR */}
+      {/* BOTÓN FLOTANTE DE GUARDAR (ABSOLUTO)
+         - position-absolute: Lo saca del flujo normal (no empuja nada).
+         - top-50 translate-middle-y: Lo centra verticalmente.
+         - start-100: Lo mueve 100% a la derecha del contenedor.
+         - ms-2: Un pequeño margen para separarlo.
+      */}
       {haCambiado && (
         <button
-          className="btn btn-success btn-save-floating"
+          className="btn border-0 bg-transparent p-0 d-flex align-items-center justify-content-center text-success animate__animated animate__fadeIn position-absolute top-50 start-100 translate-middle-y ms-3"
           onClick={handleSave}
           title="Guardar cambios"
+          style={{ width: "30px", height: "30px" }}
         >
-          💾
+          <i className="bx bx-save fs-3"></i>
         </button>
       )}
     </div>
@@ -86,6 +96,7 @@ function ProductoList({ productos, onEliminar, onActualizarStock }) {
   if (productos.length === 0) {
     return (
       <div className="text-center py-5 text-muted">
+        <i className="bx bx-package fs-1 mb-2"></i>
         <p>No hay productos en el inventario.</p>
       </div>
     );
@@ -103,7 +114,12 @@ function ProductoList({ productos, onEliminar, onActualizarStock }) {
             <th scope="col" className="text-end">
               Precio
             </th>
-            <th scope="col" className="text-center">
+            {/* Damos un poco más de ancho a la columna Inventario para el botón flotante */}
+            <th
+              scope="col"
+              className="text-center"
+              style={{ minWidth: "120px" }}
+            >
               Inventario
             </th>
             <th scope="col" className="text-end pe-4">
@@ -117,7 +133,7 @@ function ProductoList({ productos, onEliminar, onActualizarStock }) {
               <td className="ps-4">
                 <div className="d-flex align-items-center">
                   <div
-                    className="rounded-3 overflow-hidden shadow-sm me-3"
+                    className="rounded-3 overflow-hidden shadow-sm me-3 d-flex align-items-center justify-content-center bg-white"
                     style={{ width: "45px", height: "45px" }}
                   >
                     {prod.imagen ? (
@@ -127,12 +143,12 @@ function ProductoList({ productos, onEliminar, onActualizarStock }) {
                         style={{
                           width: "100%",
                           height: "100%",
-                          objectFit: "contain", // IMAGEN COMPLETA
+                          objectFit: "contain",
                         }}
                       />
                     ) : (
-                      <div className="w-100 h-100 bg-secondary bg-opacity-10 d-flex align-items-center justify-content-center fs-5">
-                        🎮
+                      <div className="w-100 h-100 bg-secondary bg-opacity-10 d-flex align-items-center justify-content-center text-secondary">
+                        <i className="bx bx-joystick fs-4"></i>
                       </div>
                     )}
                   </div>
@@ -158,20 +174,20 @@ function ProductoList({ productos, onEliminar, onActualizarStock }) {
                 ${prod.precio.toLocaleString()}
               </td>
               <td className="text-center">
-                {/* Se conecta con el AdminPanel mediante 'onActualizarStock' */}
                 <StockEditor
                   producto={prod}
                   onGuardarCambio={onActualizarStock}
                 />
               </td>
               <td className="text-end pe-4">
+                {/* BOTÓN ELIMINAR - ROJO */}
                 <button
-                  className="btn btn-sm btn-outline-danger border-0 rounded-circle p-2"
+                  className="btn border-0 bg-transparent p-0 d-inline-flex align-items-center justify-content-center text-danger"
                   onClick={() => onEliminar(prod.id)}
                   title="Eliminar producto"
                   style={{ width: "35px", height: "35px" }}
                 >
-                  🗑️
+                  <i className="bx bx-trash fs-4"></i>
                 </button>
               </td>
             </tr>

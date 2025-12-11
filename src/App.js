@@ -18,6 +18,7 @@ import Login from "./pages/Login";
 import AdminPanel from "./pages/AdminPanel";
 import Registro from "./pages/Registro";
 import Nosotros from "./pages/Nosotros";
+import Blog from "./pages/Blog";
 
 function App() {
   const [isAuth, setIsAuth] = useState(false);
@@ -75,6 +76,7 @@ function App() {
             <Route path="/carrito" element={<Carrito />} />
             <Route path="/nosotros" element={<Nosotros />} />
             <Route path="/register" element={<Registro />} />
+            <Route path="/blog" element={<Blog />} />
 
             {/* CORRECCIÓN CRÍTICA: La prop debe llamarse 'onLogin' */}
             <Route path="/login" element={<Login onLogin={handleLogin} />} />

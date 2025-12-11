@@ -1,11 +1,11 @@
 import React, { useState, useEffect, useCallback } from "react";
 import axios from "axios";
 
-// --- IMPORTAMOS TUS COMPONENTES (Asegúrate de tenerlos en las carpetas correctas) ---
+// --- IMPORTAMOS TUS COMPONENTES ---
 import ProductoForm from "../components/ProductoForm";
 import ProductoList from "../components/ProductoList";
 
-// Componentes del Panel de Admin (Creados anteriormente)
+// Componentes del Panel de Admin
 import DashboardStats from "../components/admin/DashboardStats";
 import DashboardCharts from "../components/admin/DashboardCharts";
 import UsersManager from "../components/admin/UsersManager";
@@ -17,20 +17,19 @@ import ProfileView from "../components/admin/ProfileView";
 const API_URL = "https://gamershop-backend-1.onrender.com";
 
 function AdminPanel() {
-  // Estado para controlar la pestaña activa (Sidebar)
   const [activeTab, setActiveTab] = useState("dashboard");
 
-  // Estados de Datos
   const [productos, setProductos] = useState([]);
   const [categorias, setCategorias] = useState([]);
-  const [usuarios, setUsuarios] = useState([]); // Usuarios reales de la BD
-  const [ordenes, setOrdenes] = useState([]); // Boletas reales de la BD
+  const [usuarios, setUsuarios] = useState([]);
+  const [ordenes, setOrdenes] = useState([]);
 
-  // Estados de UI
   const [cargando, setCargando] = useState(false);
   const [error, setError] = useState(null);
 
-  // --- HELPER: OBTENER HEADERS CON TOKEN ---
+  // --- NUEVO ESTADO PARA MENSAJES DE ÉXITO ---
+  const [mensajeExito, setMensajeExito] = useState(null);
+
   const getAuthHeaders = () => {
     const token = localStorage.getItem("jwt_token");
     if (!token) return null;
@@ -40,14 +39,22 @@ function AdminPanel() {
     };
   };
 
-  // --- HELPER: MANEJAR ERROR DE AUTH ---
   const handleAuthError = () => {
     localStorage.clear();
     window.location.href = "/login";
   };
 
+  // --- HELPER PARA MOSTRAR ÉXITO TEMPORAL ---
+  const mostrarExito = (mensaje) => {
+    setMensajeExito(mensaje);
+    // El mensaje desaparece a los 3 segundos
+    setTimeout(() => {
+      setMensajeExito(null);
+    }, 3000);
+  };
+
   // ==========================================
-  // 1. CARGA DE DATOS MAESTRA (FetchData)
+  // 1. CARGA DE DATOS
   // ==========================================
   const fetchData = useCallback(async () => {
     setCargando(true);
@@ -59,23 +66,19 @@ function AdminPanel() {
     }
 
     try {
-      // A. Cargar Productos
       const resProd = await fetch(`${API_URL}/productos`);
       if (resProd.ok) setProductos(await resProd.json());
 
-      // B. Cargar Categorías
       const resCat = await fetch(`${API_URL}/categorias`);
       if (resCat.ok) setCategorias(await resCat.json());
 
-      // C. Cargar Usuarios (Desde tu UsuarioController actualizado)
       try {
         const resUser = await axios.get(`${API_URL}/usuarios`, { headers });
         setUsuarios(resUser.data);
       } catch (e) {
-        console.warn("Error cargando usuarios (¿Eres Admin?)", e);
+        console.warn("Error cargando usuarios", e);
       }
 
-      // D. Cargar Órdenes / Boletas (Desde tu OrdenController actualizado)
       try {
         const resOrd = await axios.get(`${API_URL}/ordenes`, { headers });
         setOrdenes(resOrd.data);
@@ -90,24 +93,36 @@ function AdminPanel() {
     }
   }, []);
 
-  // Cargar todo al iniciar el componente
   useEffect(() => {
     fetchData();
   }, [fetchData]);
 
   // ==========================================
-  // 2. ACCIONES DEL CRUD DE PRODUCTOS
+  // 2. ACCIONES DE PRODUCTOS
   // ==========================================
+
   const handleActualizarStock = async (id, nuevoStock) => {
     const headers = getAuthHeaders();
     try {
+      const cantidadNumerica = parseInt(nuevoStock, 10);
+
+      if (isNaN(cantidadNumerica)) {
+        alert("Por favor ingresa un número válido.");
+        return;
+      }
+
       await axios.put(`${API_URL}/productos/${id}/stock`, null, {
-        params: { cantidad: nuevoStock },
+        params: { cantidad: cantidadNumerica },
         headers,
       });
-      fetchData(); // Recargar datos
+
+      // --- MENSAJE DE ÉXITO AL ACTUALIZAR STOCK ---
+      mostrarExito("✅ Stock modificado correctamente.");
+      fetchData();
     } catch (e) {
-      alert("Error al actualizar stock");
+      console.error("Error detallado al actualizar stock:", e);
+      const mensajeBackend = e.response?.data || e.message;
+      alert(`Error al actualizar stock: ${mensajeBackend}`);
     }
   };
 
@@ -115,10 +130,16 @@ function AdminPanel() {
     const headers = getAuthHeaders();
     try {
       await axios.post(`${API_URL}/productos`, data, { headers });
-      alert("✅ Producto guardado");
+
+      // --- MENSAJE DE ÉXITO AL CREAR PRODUCTO ---
+      mostrarExito("✅ Producto agregado correctamente.");
       fetchData();
     } catch (e) {
-      alert("Error al guardar producto");
+      console.error(e);
+      alert(
+        "Error al guardar producto: " +
+          (e.response?.data || "Error desconocido")
+      );
     }
   };
 
@@ -127,6 +148,7 @@ function AdminPanel() {
     const headers = getAuthHeaders();
     try {
       await axios.delete(`${API_URL}/productos/${id}`, { headers });
+      mostrarExito("🗑️ Producto eliminado.");
       fetchData();
     } catch (e) {
       alert("Error al eliminar");
@@ -134,12 +156,13 @@ function AdminPanel() {
   };
 
   // ==========================================
-  // 3. ACCIONES DE CATEGORÍAS
+  // 3. OTRAS ACCIONES
   // ==========================================
   const handleAddCategory = async (data) => {
     const headers = getAuthHeaders();
     try {
       await axios.post(`${API_URL}/categorias`, data, { headers });
+      mostrarExito("Categoría creada.");
       fetchData();
     } catch (e) {
       alert("Error al crear categoría");
@@ -157,26 +180,24 @@ function AdminPanel() {
     }
   };
 
-  // ==========================================
-  // 4. ACCIONES DE USUARIOS
-  // ==========================================
   const handleDeleteUser = async (id) => {
     if (!window.confirm("¿Estás seguro de eliminar este usuario?")) return;
     const headers = getAuthHeaders();
     try {
       await axios.delete(`${API_URL}/usuarios/${id}`, { headers });
+      mostrarExito("Usuario eliminado.");
       fetchData();
     } catch (e) {
-      alert("Error al eliminar usuario. Puede que tenga compras asociadas.");
+      alert("Error al eliminar usuario.");
     }
   };
 
   // ==========================================
-  // RENDERIZADO (VISTA)
+  // RENDERIZADO
   // ==========================================
   return (
     <div className="d-flex" style={{ minHeight: "calc(100vh - 80px)" }}>
-      {/* --- SIDEBAR IZQUIERDO --- */}
+      {/* SIDEBAR */}
       <div
         className="bg-body-tertiary border-end p-3 d-flex flex-column"
         style={{ width: "250px", minHeight: "100%" }}
@@ -238,9 +259,8 @@ function AdminPanel() {
         </div>
       </div>
 
-      {/* --- CONTENIDO PRINCIPAL (DERECHA) --- */}
+      {/* CONTENIDO */}
       <div className="flex-grow-1 p-4 bg-body" style={{ overflowY: "auto" }}>
-        {/* Header Dinámico */}
         <div className="d-flex justify-content-between align-items-center mb-4">
           <h2 className="fw-bold text-capitalize">
             {activeTab === "orders" ? "Boletas & Ventas" : activeTab}
@@ -250,7 +270,15 @@ function AdminPanel() {
           )}
         </div>
 
-        {/* Alertas de Error */}
+        {/* --- AQUÍ ESTÁ LA NUEVA ALERTA DE ÉXITO --- */}
+        {mensajeExito && (
+          <div className="alert alert-success d-flex align-items-center mb-4 rounded-4 shadow-sm animate__animated animate__fadeInDown">
+            <i className="bx bx-check-circle fs-4 me-2"></i>
+            <div className="fw-bold">{mensajeExito}</div>
+          </div>
+        )}
+
+        {/* Alerta de Error */}
         {error && (
           <div className="alert alert-danger d-flex align-items-center mb-4 rounded-4 shadow-sm">
             <i className="bx bx-error-circle fs-4 me-2"></i>
@@ -258,9 +286,7 @@ function AdminPanel() {
           </div>
         )}
 
-        {/* --- VISTAS SEGÚN LA PESTAÑA ACTIVA --- */}
-
-        {/* 1. DASHBOARD */}
+        {/* VISTAS */}
         {activeTab === "dashboard" && (
           <>
             <DashboardStats
@@ -268,12 +294,10 @@ function AdminPanel() {
               ordenes={ordenes}
               usuarios={usuarios}
             />
-            {/* Gráficos conectados a los datos reales */}
             <DashboardCharts ordenes={ordenes} productos={productos} />
           </>
         )}
 
-        {/* 2. PRODUCTOS */}
         {activeTab === "products" && (
           <div className="row g-4 animate__animated animate__fadeIn">
             <div className="col-lg-4">
@@ -301,7 +325,6 @@ function AdminPanel() {
           </div>
         )}
 
-        {/* 3. CATEGORÍAS */}
         {activeTab === "categories" && (
           <CategoriesManager
             categorias={categorias}
@@ -310,15 +333,12 @@ function AdminPanel() {
           />
         )}
 
-        {/* 4. VENTAS (BOLETAS) */}
         {activeTab === "orders" && <OrdersView ordenes={ordenes} />}
 
-        {/* 5. USUARIOS */}
         {activeTab === "users" && (
           <UsersManager usuarios={usuarios} onDeleteUser={handleDeleteUser} />
         )}
 
-        {/* 6. PERFIL */}
         {activeTab === "profile" && <ProfileView />}
       </div>
     </div>

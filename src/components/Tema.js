@@ -1,59 +1,74 @@
-import React, { useEffect, useState } from "react";
+import React, { useState, useEffect } from "react";
 
-function Tema() {
-  // Detectar el tema inicial
-  const temaInicial = () => {
-    const temaGuardado = localStorage.getItem("tema");
-    if (temaGuardado) return temaGuardado;
+const Tema = () => {
+  // Estado inicial
+  const [tema, setTema] = useState(() => {
+    const guardado = localStorage.getItem("tema");
+    if (guardado) return guardado;
     return window.matchMedia("(prefers-color-scheme: dark)").matches
       ? "dark"
       : "light";
-  };
+  });
 
-  const [tema, setTema] = useState(temaInicial);
+  // Estado para controlar la animación al hacer clic
+  const [isAnimating, setIsAnimating] = useState(false);
 
-  // Aplicar tema al HTML
   useEffect(() => {
     document.documentElement.setAttribute("data-bs-theme", tema);
     localStorage.setItem("tema", tema);
   }, [tema]);
 
   const toggleTema = () => {
+    // 1. Activar animación
+    setIsAnimating(true);
+
+    // 2. Cambiar tema
     setTema((prev) => (prev === "dark" ? "light" : "dark"));
+
+    // 3. Desactivar animación después de que termine (500ms)
+    setTimeout(() => {
+      setIsAnimating(false);
+    }, 500);
   };
 
   return (
-    <button
-      onClick={toggleTema}
-      type="button"
-      className="btn btn-sm btn-outline-light rounded-pill d-flex align-items-center justify-content-center shadow-sm"
-      title={`Cambiar a modo ${tema === "dark" ? "claro" : "oscuro"}`}
-      style={{
-        width: "40px",
-        height: "40px",
-        border: "1px solid var(--bs-border-color)",
-        backgroundColor: "var(--bs-body-bg)",
-        padding: 0, // CRUCIAL: Elimina el relleno interno para un centrado perfecto
-      }}
-    >
-      <span
+    <>
+      <style>
+        {`
+          @keyframes spin-effect {
+            0% { transform: rotate(0deg) scale(1); }
+            50% { transform: rotate(180deg) scale(0.5); opacity: 0.5; }
+            100% { transform: rotate(360deg) scale(1); opacity: 1; }
+          }
+          .animating-icon {
+            animation: spin-effect 0.5s ease-in-out;
+          }
+        `}
+      </style>
+
+      <button
+        onClick={toggleTema}
+        className={`btn border-0 bg-transparent d-flex align-items-center justify-content-center p-0 ${
+          isAnimating ? "animating-icon" : ""
+        }`}
         style={{
-          display: "flex", // Usamos flex para centrar el icono dentro del span
-          alignItems: "center",
-          justifyContent: "center",
-          fontSize: "1.5rem", // Tamaño ajustado (aprox 24px) para que se vea nítido
-          transition: "transform 0.5s ease",
-          transform: tema === "dark" ? "rotate(360deg)" : "rotate(0deg)",
+          width: "38px",
+          height: "38px",
+          // Color: Magenta en modo Light (Sol), Cyan en modo Dark (Luna)
+          color: tema === "light" ? "#ff00ff" : "#00aec3",
         }}
+        title={`Cambiar a modo ${tema === "dark" ? "claro" : "oscuro"}`}
       >
-        {tema === "dark" ? (
-          <i className="bx bx-moon" style={{ color: "cyan" }}></i>
+        {tema === "light" ? (
+          // Sol
+          <i className="bx bx-sun fs-4"></i>
         ) : (
-          <i className="bx bx-sun" style={{ color: "magenta" }}></i>
+          // Luna
+          <i className="bx bx-moon fs-4"></i>
         )}
-      </span>
-    </button>
+      </button>
+    </>
   );
-}
+};
 
 export default Tema;

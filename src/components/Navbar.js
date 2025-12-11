@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import Tema from "./Tema";
-// 1. IMPORTAMOS LA IMAGEN DEL LOGO
+// IMPORTAMOS LA IMAGEN DEL LOGO
 import logo from "../assets/logo.png";
 
 function Navbar({ isAuth, role, username, onLogout }) {
@@ -60,9 +60,23 @@ function Navbar({ isAuth, role, username, onLogout }) {
     <nav className="navbar navbar-expand-lg fixed-top shadow-sm bg-body-tertiary">
       <style>
         {`
+          /* Animación del texto brillante (existente) */
           @keyframes shine {
             to { background-position: 200% center; }
           }
+          
+          /* NUEVA ANIMACIÓN DE ENTRADA (Slide Down + Fade In) */
+          @keyframes slideDownFade {
+            0% {
+              opacity: 0;
+              transform: translateY(-30px);
+            }
+            100% {
+              opacity: 1;
+              transform: translateY(0);
+            }
+          }
+
           .gamer-text {
             background: linear-gradient(to right, #00d2ff 20%, #3a7bd5 40%, #ff00ff 60%, #00d2ff 80%);
             background-size: 200% auto;
@@ -74,6 +88,12 @@ function Navbar({ isAuth, role, username, onLogout }) {
             font-weight: 800;
             letter-spacing: -0.5px;
           }
+
+          /* CLASE PARA ANIMAR EL LOGO AL CARGAR */
+          .logo-entrance {
+            animation: slideDownFade 0.8s ease-out forwards;
+          }
+
           .badge-counter {
             transition: transform 0.2s;
           }
@@ -88,25 +108,20 @@ function Navbar({ isAuth, role, username, onLogout }) {
         `}
       </style>
 
-      <div className="container">
-        {/* LOGO CON IMAGEN PNG */}
+      {/* CAMBIO AQUÍ: 'container-fluid px-4' lleva el logo más a la izquierda */}
+      <div className="container-fluid px-4">
+        {/* LOGO E IMAGEN CON ANIMACIÓN DE ENTRADA */}
         <Link
-          // CAMBIO AQUÍ: 'gap-1' reduce el espacio. Si quieres menos aún usa 'gap-0'.
-          className="navbar-brand fw-bold fs-4 d-flex align-items-center gap-1"
+          className="navbar-brand fw-bold fs-4 d-flex align-items-center gap-1 logo-entrance"
           to="/"
           onClick={closeMenu}
         >
-          {/* 2. AQUÍ ESTÁ TU LOGO COMO IMAGEN */}
           <img
             src={logo}
             alt="GamerShop Logo"
-            height="40" // Altura ajustada
+            height="40"
             className="d-inline-block align-text-top"
-            // OPCIONAL: Si aún se ve separado, puedes usar un margen negativo pequeño
-            // style={{ marginRight: "-5px" }}
           />
-
-          {/* Texto Animado */}
           <span className="gamer-text">GamerShop</span>
         </Link>
 
@@ -133,6 +148,13 @@ function Navbar({ isAuth, role, username, onLogout }) {
             <li className="nav-item">
               <Link className="nav-link" to="/categoria" onClick={closeMenu}>
                 <i className="bx bx-category"></i> Categorías
+              </Link>
+            </li>
+
+            {/* LINK AL BLOG */}
+            <li className="nav-item">
+              <Link className="nav-link" to="/blog" onClick={closeMenu}>
+                <i className="bx bx-message-square-detail"></i> Blog
               </Link>
             </li>
 
