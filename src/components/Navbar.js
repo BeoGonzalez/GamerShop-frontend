@@ -1,10 +1,12 @@
 import React, { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import Tema from "./Tema";
+// 1. IMPORTAMOS LA IMAGEN DEL LOGO
+import logo from "../assets/logo.png";
 
 function Navbar({ isAuth, role, username, onLogout }) {
   const [isOpen, setIsOpen] = useState(false);
-  const [cantidadCarrito, setCantidadCarrito] = useState(0); // Estado para el contador
+  const [cantidadCarrito, setCantidadCarrito] = useState(0);
   const navigate = useNavigate();
 
   const handleLogout = () => {
@@ -18,7 +20,6 @@ function Navbar({ isAuth, role, username, onLogout }) {
 
   // --- LÓGICA DEL CONTADOR ---
   useEffect(() => {
-    // Función para leer y contar items del localStorage
     const actualizarContador = () => {
       if (!isAuth || !username) {
         setCantidadCarrito(0);
@@ -31,7 +32,6 @@ function Navbar({ isAuth, role, username, onLogout }) {
       if (carritoGuardado) {
         try {
           const items = JSON.parse(carritoGuardado);
-          // Sumamos las cantidades individuales de cada producto
           const total = items.reduce(
             (acc, item) => acc + (item.cantidad || 1),
             0
@@ -46,15 +46,10 @@ function Navbar({ isAuth, role, username, onLogout }) {
       }
     };
 
-    // 1. Ejecutar al iniciar
     actualizarContador();
-
-    // 2. Escuchar evento personalizado "cartUpdated" (para actualizaciones en vivo)
     window.addEventListener("cartUpdated", actualizarContador);
-    // 3. Escuchar evento "storage" (por si tienes varias pestañas abiertas)
     window.addEventListener("storage", actualizarContador);
 
-    // Limpieza al desmontar
     return () => {
       window.removeEventListener("cartUpdated", actualizarContador);
       window.removeEventListener("storage", actualizarContador);
@@ -79,23 +74,39 @@ function Navbar({ isAuth, role, username, onLogout }) {
             font-weight: 800;
             letter-spacing: -0.5px;
           }
-          /* Animación para el contador */
           .badge-counter {
             transition: transform 0.2s;
           }
           .badge-counter:hover {
             transform: scale(1.2);
           }
+          .nav-link i, .btn i {
+            vertical-align: middle;
+            margin-right: 5px;
+            font-size: 1.2rem;
+          }
         `}
       </style>
 
       <div className="container">
+        {/* LOGO CON IMAGEN PNG */}
         <Link
-          className="navbar-brand fw-bold fs-4 d-flex align-items-center gap-2"
+          // CAMBIO AQUÍ: 'gap-1' reduce el espacio. Si quieres menos aún usa 'gap-0'.
+          className="navbar-brand fw-bold fs-4 d-flex align-items-center gap-1"
           to="/"
           onClick={closeMenu}
         >
-          <span style={{ fontSize: "1.5rem" }}>🎮</span>
+          {/* 2. AQUÍ ESTÁ TU LOGO COMO IMAGEN */}
+          <img
+            src={logo}
+            alt="GamerShop Logo"
+            height="40" // Altura ajustada
+            className="d-inline-block align-text-top"
+            // OPCIONAL: Si aún se ve separado, puedes usar un margen negativo pequeño
+            // style={{ marginRight: "-5px" }}
+          />
+
+          {/* Texto Animado */}
           <span className="gamer-text">GamerShop</span>
         </Link>
 
@@ -115,17 +126,25 @@ function Navbar({ isAuth, role, username, onLogout }) {
           <ul className="navbar-nav me-auto mb-2 mb-lg-0">
             <li className="nav-item">
               <Link className="nav-link" to="/" onClick={closeMenu}>
-                Inicio
+                <i className="bx bx-home-alt-2"></i> Inicio
               </Link>
             </li>
+
             <li className="nav-item">
               <Link className="nav-link" to="/categoria" onClick={closeMenu}>
-                Categorías
+                <i className="bx bx-category"></i> Categorías
               </Link>
             </li>
+
+            <li className="nav-item">
+              <Link className="nav-link" to="/nosotros" onClick={closeMenu}>
+                <i className="bx bx-group"></i> Nosotros
+              </Link>
+            </li>
+
             <li className="nav-item">
               <Link className="nav-link" to="/contacto" onClick={closeMenu}>
-                Contacto
+                <i className="bx bx-envelope"></i> Contacto
               </Link>
             </li>
 
@@ -136,8 +155,7 @@ function Navbar({ isAuth, role, username, onLogout }) {
                   to="/carrito"
                   onClick={closeMenu}
                 >
-                  🛒 Carrito
-                  {/* --- AQUÍ ESTÁ EL CONTADOR --- */}
+                  <i className="bx bx-cart"></i> Carrito
                   {cantidadCarrito > 0 && (
                     <span className="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger badge-counter">
                       {cantidadCarrito}
@@ -155,10 +173,9 @@ function Navbar({ isAuth, role, username, onLogout }) {
                 <Link
                   to="/admin"
                   onClick={closeMenu}
-                  className="nav-link btn btn-outline-warning btn-sm text-warning px-3 border-warning rounded-pill fw-bold"
-                  style={{ width: "fit-content" }}
+                  className="nav-link btn btn-outline-warning btn-sm text-warning px-3 border-warning rounded-pill fw-bold text-center"
                 >
-                  AdminPanel
+                  <i className="bx bxs-dashboard"></i> AdminPanel
                 </Link>
               </li>
             )}
@@ -173,9 +190,9 @@ function Navbar({ isAuth, role, username, onLogout }) {
               <Link
                 to="/login"
                 onClick={closeMenu}
-                className="btn btn-primary fw-bold px-4 rounded-pill"
+                className="btn btn-primary fw-bold px-4 rounded-pill d-flex align-items-center justify-content-center"
               >
-                Iniciar Sesión
+                <i className="bx bx-log-in-circle"></i> Iniciar Sesión
               </Link>
             ) : (
               <>
@@ -193,9 +210,9 @@ function Navbar({ isAuth, role, username, onLogout }) {
 
                 <button
                   onClick={handleLogout}
-                  className="btn btn-outline-danger btn-sm rounded-pill px-3"
+                  className="btn btn-outline-danger btn-sm rounded-pill px-3 d-flex align-items-center justify-content-center"
                 >
-                  Salir
+                  <i className="bx bx-log-out-circle"></i> Salir
                 </button>
               </>
             )}

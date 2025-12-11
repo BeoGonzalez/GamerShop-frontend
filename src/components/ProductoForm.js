@@ -155,9 +155,13 @@ function ProductoForm({ onGuardar, categoriasDisponibles = [] }) {
         )}
 
         {imagenInvalida && producto.imagen && (
-          <div className="mt-2 text-danger small">
-            ⚠️ No se pudo cargar la imagen. Verifica que la URL sea directa
-            (terminada en .jpg, .png, etc).
+          <div className="mt-2 text-danger small d-flex align-items-center gap-1">
+            {/* ICONO BOXICON EN VEZ DE EMOJI */}
+            <i className="bx bx-error-circle fs-5"></i>
+            <span>
+              No se pudo cargar la imagen. Verifica que la URL sea directa
+              (terminada en .jpg, .png, etc).
+            </span>
           </div>
         )}
       </div>

@@ -16,7 +16,7 @@ function Home() {
   const isAuth = !!localStorage.getItem("jwt_token");
   const username = localStorage.getItem("username");
 
-  // 1. Cargar productos desde la Base de Datos al iniciar
+  // 1. Cargar productos
   useEffect(() => {
     const fetchProductos = async () => {
       try {
@@ -32,13 +32,9 @@ function Home() {
     fetchProductos();
   }, []);
 
-  // 2. Agrupar productos por Categoría (CORREGIDO)
+  // 2. Agrupar productos
   const productosPorCategoria = productos.reduce((acc, producto) => {
-    // AQUÍ ESTABA EL ERROR DE "OBJECT OBJECT"
-    // Antes: const categoria = producto.categoria || "General";
-    // Ahora: Accedemos a .nombre para obtener el texto
     const categoria = producto.categoria?.nombre || "Productos";
-
     if (!acc[categoria]) {
       acc[categoria] = [];
     }
@@ -61,7 +57,7 @@ function Home() {
       const carritoActual = JSON.parse(localStorage.getItem(storageKey)) || [];
       const existe = carritoActual.find((item) => item.id === prod.id);
 
-      // --- VALIDACIÓN DE STOCK ---
+      // Validación de Stock
       const cantidadEnCarrito = existe ? existe.cantidad || 1 : 0;
       if (cantidadEnCarrito + 1 > prod.stock) {
         alert(
@@ -106,18 +102,14 @@ function Home() {
           !error &&
           Object.keys(productosPorCategoria).map((categoria) => (
             <div key={categoria} className="mb-5">
-              {/* TÍTULO CENTRADO Y CORREGIDO */}
-              <h2 className="border-bottom border-secondary pb-2 mb-4 text-center text-body">
-                <span className="text-warning">⚡</span> {categoria}
+              {/* TÍTULO CON ICONO BOXICON */}
+              <h2 className="border-bottom border-secondary pb-2 mb-4 text-center text-body d-flex align-items-center justify-content-center gap-2">
+                <i className="bx bxs-zap text-warning"></i> {categoria}
               </h2>
 
               <div className="row row-cols-1 row-cols-md-2 row-cols-lg-4 g-4">
                 {productosPorCategoria[categoria].map((prod) => (
                   <div className="col" key={prod.id}>
-                    {/* CORRECCIÓN DE MODO OSCURO:
-                        Quitamos 'bg-dark text-white' y dejamos que Bootstrap maneje los colores 
-                        con la clase 'card' por defecto.
-                    */}
                     <div className="card h-100 shadow-sm hover-effect border-secondary-subtle">
                       {/* Imagen */}
                       <div
@@ -137,18 +129,20 @@ function Home() {
                             }}
                             onError={(e) => {
                               e.target.style.display = "none";
+                              // Mostramos el icono hermano si falla la imagen
                               e.target.nextSibling.style.display = "block";
                             }}
                           />
                         ) : null}
-                        <span
+
+                        {/* ICONO DE JOYSTICK EN VEZ DE EMOJI */}
+                        <i
+                          className="bx bx-joystick text-secondary opacity-25"
                           style={{
-                            fontSize: "3rem",
+                            fontSize: "5rem",
                             display: prod.imagen ? "none" : "block",
                           }}
-                        >
-                          🎮
-                        </span>
+                        ></i>
 
                         {prod.stock <= 0 && (
                           <div className="position-absolute top-0 end-0 bg-danger text-white px-2 py-1 m-2 rounded small fw-bold">
@@ -180,17 +174,23 @@ function Home() {
                           </div>
 
                           <button
-                            className={`btn w-100 fw-bold ${
+                            className={`btn w-100 fw-bold d-flex align-items-center justify-content-center gap-2 ${
                               isAuth ? "btn-primary" : "btn-outline-primary"
                             }`}
                             onClick={() => handleAccionBoton(prod)}
                             disabled={prod.stock <= 0}
                           >
-                            {prod.stock > 0
-                              ? isAuth
-                                ? "Añadir al Carrito 🛒"
-                                : "Inicia Sesión para Comprar"
-                              : "Sin Stock"}
+                            {prod.stock > 0 ? (
+                              isAuth ? (
+                                <>
+                                  Añadir <i className="bx bx-cart-add fs-5"></i>
+                                </>
+                              ) : (
+                                "Inicia Sesión"
+                              )
+                            ) : (
+                              "Sin Stock"
+                            )}
                           </button>
                         </div>
                       </div>

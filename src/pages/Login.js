@@ -1,168 +1,141 @@
 import React, { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
-import axios from "axios";
 
-// Definimos la URL Base del Backend aquí mismo para asegurar la conexión directa
-const API_BASE_URL = "https://gamershop-backend-1.onrender.com";
-
-const Login = ({ onLoginSuccess }) => {
-  const [username, setUsername] = useState("");
+function Login({ onLogin }) {
+  const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [error, setError] = useState("");
-  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
   const navigate = useNavigate();
 
-  const handleLogin = async (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    setError("");
-    setLoading(true);
+    setError(null);
 
     try {
-      // 1. Petición Directa con Axios
-      // Concatenamos la URL base con el endpoint específico
-      const response = await axios.post(`${API_BASE_URL}/auth/login`, {
-        username: username,
-        password: password,
-      });
-
-      console.log("Respuesta del login:", response.data);
-
-      // 2. Validación y Extracción de Datos
-      const data = response.data;
-
-      // Adaptar según lo que devuelve tu backend.
-      // Prioridad: 1. data.token (JSON), 2. data (String plano)
-      const token = data.token || (typeof data === "string" ? data : null);
-
-      // Si el rol no viene en el JSON, asignamos "USER" por defecto
-      const rol = data.rol || "USER";
-
-      if (!token) {
-        throw new Error("No se recibió un token válido del servidor.");
-      }
-
-      // 3. Guardar en LocalStorage (Persistencia)
-      localStorage.setItem("jwt_token", token);
-      localStorage.setItem("username", username);
-      localStorage.setItem("rol", rol);
-
-      // 4. Actualizar estado global en App.js
-      if (onLoginSuccess) {
-        onLoginSuccess(username, rol);
-      }
-
-      // 5. Redirigir al Home
-      navigate("/");
-    } catch (err) {
-      console.error("Error en login:", err);
-
-      // Manejo de errores detallado
-      if (err.response) {
-        // El servidor respondió con un código de error (4xx, 5xx)
-        if (err.response.status === 401 || err.response.status === 403) {
-          setError("Usuario o contraseña incorrectos.");
-        } else {
-          setError(`Error del servidor: ${err.response.status}`);
+      const response = await fetch(
+        "https://gamershop-backend-1.onrender.com/auth/login",
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            email: email,
+            password: password,
+          }),
         }
-      } else if (err.request) {
-        // No hubo respuesta (Servidor caído, dormido o problema de red/CORS)
-        setError(
-          "No se pudo conectar con el servidor. Verifica tu internet o espera un momento si Render está despertando."
-        );
-      } else {
-        // Error al configurar la petición
-        setError("Ocurrió un error inesperado. Intenta de nuevo.");
+      );
+
+      if (!response.ok) {
+        // Si el backend responde 401 o 404, lanzamos error controlado
+        throw new Error("Credenciales inválidas");
       }
-    } finally {
-      setLoading(false);
+
+      const data = await response.json();
+
+      // 1. Guardar en LocalStorage
+      // Aseguramos que los datos no sean null antes de guardar
+      if (data.token) localStorage.setItem("jwt_token", data.token);
+      if (data.username) localStorage.setItem("username", data.username);
+      if (data.rol) localStorage.setItem("rol", data.rol);
+
+      // 2. Actualizar App.js
+      // Verificamos si la función existe antes de llamarla para evitar crashes
+      if (typeof onLogin === "function") {
+        onLogin(data.rol, data.username);
+      }
+
+      // 3. Redirección
+      // Usamos setTimeout para asegurar que el estado se actualice antes de cambiar de página
+      setTimeout(() => {
+        if (data.rol === "ADMIN") {
+          navigate("/admin");
+        } else {
+          navigate("/");
+        }
+      }, 100);
+    } catch (err) {
+      console.error("❌ ERROR REAL EN EL LOGIN:", err); // MIRA LA CONSOLA DEL NAVEGADOR
+
+      // Si el error es de conexión o código, mostramos algo genérico,
+      // pero si es credenciales, mostramos eso.
+      if (err.message === "Credenciales inválidas") {
+        setError("Correo o contraseña incorrectos.");
+      } else {
+        setError("Ocurrió un error al procesar el ingreso. Revisa la consola.");
+      }
     }
   };
 
   return (
-    // Contenedor con estilos de Bootstrap adaptables (bg-body-tertiary se adapta al tema)
-    <div className="d-flex justify-content-center align-items-center min-vh-100 bg-body-tertiary">
+    <div
+      className="container d-flex justify-content-center align-items-center"
+      style={{ minHeight: "80vh" }}
+    >
       <div
-        className="card p-4 shadow-lg"
-        style={{
-          width: "100%",
-          maxWidth: "400px",
-        }}
+        className="card shadow-lg border-0 rounded-4 overflow-hidden"
+        style={{ maxWidth: "400px", width: "100%" }}
       >
-        <div className="card-body">
-          <h2 className="text-center mb-4 fw-bold">Iniciar Sesión</h2>
+        <div className="card-header bg-primary text-white text-center py-4">
+          <i className="bx bx-user-circle" style={{ fontSize: "4rem" }}></i>
+          <h2 className="fw-bold mt-2">Bienvenido</h2>
+          <p className="mb-0 opacity-75">Inicia sesión para continuar</p>
+        </div>
 
-          <form onSubmit={handleLogin}>
-            <div className="mb-3 text-start">
-              <label className="form-label fw-bold">Usuario</label>
+        <div className="card-body p-4 bg-body-tertiary">
+          {error && (
+            <div
+              className="alert alert-danger d-flex align-items-center gap-2"
+              role="alert"
+            >
+              <i className="bx bx-error-circle fs-4"></i>
+              <div>{error}</div>
+            </div>
+          )}
+
+          <form onSubmit={handleSubmit}>
+            <div className="form-floating mb-3">
               <input
-                type="text"
-                className="form-control"
-                value={username}
-                onChange={(e) => setUsername(e.target.value)}
+                type="email"
+                className="form-control rounded-3"
+                id="floatingInput"
+                placeholder="name@example.com"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
                 required
-                placeholder="Tu usuario"
-                autoComplete="username"
               />
+              <label htmlFor="floatingInput">Correo Electrónico</label>
             </div>
 
-            <div className="mb-4 text-start">
-              <label className="form-label fw-bold">Contraseña</label>
+            <div className="form-floating mb-4">
               <input
                 type="password"
-                className="form-control"
+                className="form-control rounded-3"
+                id="floatingPassword"
+                placeholder="Password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 required
-                placeholder="********"
-                autoComplete="current-password"
               />
+              <label htmlFor="floatingPassword">Contraseña</label>
             </div>
 
-            <div className="d-grid gap-2">
-              <button
-                type="submit"
-                disabled={loading}
-                className="btn btn-primary fw-bold py-2"
-              >
-                {loading ? (
-                  <>
-                    <span
-                      className="spinner-border spinner-border-sm me-2"
-                      role="status"
-                      aria-hidden="true"
-                    ></span>
-                    Verificando...
-                  </>
-                ) : (
-                  "ENTRAR"
-                )}
-              </button>
-            </div>
-
-            {error && (
-              <div
-                className="alert alert-danger mt-3 d-flex align-items-center p-2 small"
-                role="alert"
-              >
-                <span className="fs-5 me-2">⚠️</span>
-                <div>{error}</div>
-              </div>
-            )}
-          </form>
-
-          <div className="mt-4 text-center border-top pt-3">
-            <p className="text-muted small mb-1">¿No tienes cuenta?</p>
-            <Link
-              to="/register"
-              className="text-decoration-none fw-bold text-primary"
+            <button
+              type="submit"
+              className="btn btn-primary w-100 py-3 fw-bold rounded-pill shadow-sm hover-scale"
             >
-              Regístrate aquí
-            </Link>
-          </div>
+              INGRESAR <i className="bx bx-log-in-circle ms-1"></i>
+            </button>
+          </form>
+        </div>
+
+        <div className="card-footer text-center py-3 bg-body border-0">
+          <small className="text-muted">¿No tienes cuenta? </small>
+          <Link to="/register" className="text-decoration-none fw-bold">
+            Regístrate aquí
+          </Link>
         </div>
       </div>
     </div>
   );
-};
+}
 
 export default Login;

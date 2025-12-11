@@ -7,9 +7,6 @@ function Contact() {
     e.preventDefault();
     // Simulamos el envío
     setEnviado(true);
-
-    // Opcional: Resetear el formulario después de 3 segundos
-    // setTimeout(() => setEnviado(false), 3000);
   };
 
   return (
@@ -18,9 +15,13 @@ function Contact() {
         <div className="col-md-8 col-lg-6">
           {/* TARJETA MODERNA */}
           <div className="card shadow-lg border-0 rounded-4 overflow-hidden">
+            {/* CABECERA CON ICONO */}
             <div className="card-header bg-primary text-white text-center py-4">
-              <h2 className="fw-bold m-0">Contáctanos</h2>
-              <p className="mb-0 opacity-75">Estamos aquí para ayudarte</p>
+              <div className="mb-2">
+                <i className="bx bx-support" style={{ fontSize: "3rem" }}></i>
+              </div>
+              <h2 className="fw-bold m-0">Centro de Ayuda</h2>
+              <p className="mb-0 opacity-75">Estamos listos para asistirte</p>
             </div>
 
             <div className="card-body p-5 bg-body-tertiary">
@@ -28,29 +29,33 @@ function Contact() {
               {enviado ? (
                 <div className="text-center py-5 animate__animated animate__fadeIn">
                   <div className="mb-3">
-                    <span style={{ fontSize: "4rem" }}>✅</span>
+                    {/* Icono de Check Gigante */}
+                    <i
+                      className="bx bx-check-circle text-success"
+                      style={{ fontSize: "5rem" }}
+                    ></i>
                   </div>
-                  <h3 className="text-success fw-bold">¡Mensaje Enviado!</h3>
+                  <h3 className="text-success fw-bold">¡Mensaje Recibido!</h3>
                   <p className="text-muted">
-                    Se ha enviado correctamente hacia el correo:
+                    Hemos enviado una confirmación a:
                     <br />
                     <strong>gamershop230@gmail.com</strong>
                   </p>
                   <button
-                    className="btn btn-outline-primary mt-3 rounded-pill px-4"
+                    className="btn btn-outline-primary mt-3 rounded-pill px-4 d-inline-flex align-items-center gap-2"
                     onClick={() => setEnviado(false)}
                   >
-                    Enviar otro mensaje
+                    <i className="bx bx-refresh fs-4"></i> Enviar otro mensaje
                   </button>
                 </div>
               ) : (
                 /* FORMULARIO */
                 <form onSubmit={handleSubmit}>
                   <p className="text-center text-muted mb-4">
-                    ¿Tienes alguna duda con tu compra? Escríbenos.
+                    Completa el formulario y un agente te contactará.
                   </p>
 
-                  {/* Input Nombre con Floating Label */}
+                  {/* Input Nombre (LIMPIO) */}
                   <div className="form-floating mb-3">
                     <input
                       type="text"
@@ -59,10 +64,10 @@ function Contact() {
                       placeholder="Tu Nombre"
                       required
                     />
-                    <label htmlFor="floatingNombre">Nombre Completo</label>
+                    <label htmlFor="floatingNombre">Nombre de Jugador</label>
                   </div>
 
-                  {/* Input Email (Opcional, pero recomendado) */}
+                  {/* Input Email (LIMPIO) */}
                   <div className="form-floating mb-3">
                     <input
                       type="email"
@@ -74,7 +79,7 @@ function Contact() {
                     <label htmlFor="floatingEmail">Correo Electrónico</label>
                   </div>
 
-                  {/* Textarea Mensaje */}
+                  {/* Textarea Mensaje (LIMPIO) */}
                   <div className="form-floating mb-4">
                     <textarea
                       className="form-control rounded-3"
@@ -90,24 +95,24 @@ function Contact() {
                   <div className="d-grid">
                     <button
                       type="submit"
-                      className="btn btn-primary btn-lg rounded-pill fw-bold shadow-sm hover-effect"
+                      className="btn btn-primary btn-lg rounded-pill fw-bold shadow-sm hover-effect d-flex align-items-center justify-content-center gap-2"
                     >
-                      Enviar Mensaje
+                      Enviar Mensaje <i className="bx bx-paper-plane"></i>
                     </button>
                   </div>
                 </form>
               )}
             </div>
 
-            {/* Pie de tarjeta con info extra */}
+            {/* Pie de tarjeta */}
             {!enviado && (
               <div className="card-footer text-center py-3 bg-body text-muted small">
-                También puedes escribirnos directo a:{" "}
+                O contáctanos directamente:{" "}
                 <a
                   href="mailto:gamershop230@gmail.com"
-                  className="text-decoration-none fw-bold"
+                  className="text-decoration-none fw-bold d-inline-flex align-items-center gap-1"
                 >
-                  gamershop230@gmail.com
+                  <i className="bx bx-mail-send"></i> gamershop230@gmail.com
                 </a>
               </div>
             )}

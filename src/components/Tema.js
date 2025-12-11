@@ -26,23 +26,31 @@ function Tema() {
     <button
       onClick={toggleTema}
       type="button"
-      className="btn btn-sm btn-outline-light rounded-pill d-flex align-items-center justify-content-center"
+      className="btn btn-sm btn-outline-light rounded-pill d-flex align-items-center justify-content-center shadow-sm"
       title={`Cambiar a modo ${tema === "dark" ? "claro" : "oscuro"}`}
       style={{
         width: "40px",
         height: "40px",
-        border: "1px solid rgba(255,255,255,0.2)",
+        border: "1px solid var(--bs-border-color)",
+        backgroundColor: "var(--bs-body-bg)",
+        padding: 0, // CRUCIAL: Elimina el relleno interno para un centrado perfecto
       }}
     >
       <span
         style={{
-          display: "inline-block",
-          fontSize: "1.2rem",
+          display: "flex", // Usamos flex para centrar el icono dentro del span
+          alignItems: "center",
+          justifyContent: "center",
+          fontSize: "1.5rem", // Tamaño ajustado (aprox 24px) para que se vea nítido
           transition: "transform 0.5s ease",
           transform: tema === "dark" ? "rotate(360deg)" : "rotate(0deg)",
         }}
       >
-        {tema === "dark" ? "🌙" : "☀️"}
+        {tema === "dark" ? (
+          <i className="bx bx-moon" style={{ color: "cyan" }}></i>
+        ) : (
+          <i className="bx bx-sun" style={{ color: "magenta" }}></i>
+        )}
       </span>
     </button>
   );

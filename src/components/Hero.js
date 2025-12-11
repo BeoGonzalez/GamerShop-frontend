@@ -1,4 +1,3 @@
-import React, { useState } from "react";
 import Gif from "../assets/animacion.gif";
 
 function Hero() {

@@ -1,206 +1,135 @@
 import React, { useState } from "react";
-import { useNavigate, Link } from "react-router-dom";
-import axios from "axios";
+import { Link, useNavigate } from "react-router-dom";
 
-const Registro = () => {
-  const API_URL = "https://gamershop-backend-1.onrender.com/auth";
-
-  // Estados para el formulario (Datos que se envían al backend)
+function Registro() {
   const [formData, setFormData] = useState({
     username: "",
+    email: "",
     password: "",
-    rol: "USER",
   });
-
-  // Estado para la confirmación (Solo validación local, no se envía)
-  const [confirmPassword, setConfirmPassword] = useState("");
-
   const [error, setError] = useState("");
-  const [success, setSuccess] = useState("");
-  const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
 
   const handleChange = (e) => {
-    setFormData({
-      ...formData,
-      [e.target.name]: e.target.value,
-    });
+    setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
-  const handleRegister = async (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     setError("");
-    setSuccess("");
-    setLoading(true);
-
-    // --- 1. VALIDACIÓN DE CONTRASEÑAS ---
-    if (formData.password !== confirmPassword) {
-      setError("❌ Las contraseñas no coinciden. Por favor verifícalas.");
-      setLoading(false); // Detenemos la carga
-      return; // 🛑 DETENEMOS LA EJECUCIÓN AQUÍ (No se envía nada al backend)
-    }
 
     try {
-      // Si pasan la validación, enviamos los datos
-      await axios.post(`${API_URL}/registro`, formData);
-
-      setSuccess("¡Cuenta creada exitosamente! Redirigiendo...");
-      setTimeout(() => {
-        navigate("/login");
-      }, 1500);
-    } catch (err) {
-      console.error(err);
-      if (err.response) {
-        if (err.response.status === 409 || err.response.status === 500) {
-          setError("Error: El usuario ya existe.");
-        } else if (err.response.status === 400) {
-          setError("Datos inválidos.");
-        } else {
-          setError(`Error: ${err.response.status}`);
+      const response = await fetch(
+        "https://gamershop-backend-1.onrender.com/auth/register",
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            username: formData.username,
+            email: formData.email,
+            password: formData.password,
+          }),
         }
-      } else if (err.request) {
-        setError("No se pudo conectar con el servidor.");
+      );
+
+      if (response.ok) {
+        alert("✅ ¡Cuenta creada! Ahora inicia sesión con tu correo.");
+        navigate("/login");
       } else {
-        setError("Ocurrió un error inesperado.");
+        const msg = await response.text();
+        setError("Error al registrar: " + msg);
       }
-    } finally {
-      setLoading(false);
+    } catch (err) {
+      setError("Error de conexión con el servidor.");
     }
   };
 
   return (
-    <div className="d-flex justify-content-center align-items-center min-vh-100 bg-dark">
+    <div
+      className="container d-flex justify-content-center align-items-center"
+      style={{ minHeight: "80vh" }}
+    >
       <div
-        className="card p-4 shadow-lg text-white"
-        style={{
-          width: "100%",
-          maxWidth: "400px",
-          backgroundColor: "#212529",
-          border: "1px solid #495057",
-        }}
+        className="card shadow-lg border-0 rounded-4 overflow-hidden"
+        style={{ maxWidth: "450px", width: "100%" }}
       >
-        <div className="card-body">
-          <h2 className="text-center mb-4 fw-bold">Crear Cuenta</h2>
+        <div className="card-header bg-primary text-white text-center py-4">
+          <i className="bx bx-user-plus" style={{ fontSize: "3rem" }}></i>
+          <h2 className="fw-bold mt-2">Crear Cuenta</h2>
+          <p className="mb-0 opacity-75">Únete a GamerShop</p>
+        </div>
 
-          <form onSubmit={handleRegister}>
-            {/* Input Usuario */}
-            <div className="mb-3 text-start">
-              <label className="form-label text-light">Usuario</label>
+        <div className="card-body p-4 bg-body-tertiary">
+          {error && (
+            <div className="alert alert-danger d-flex align-items-center gap-2">
+              <i className="bx bx-error-circle fs-4"></i> {error}
+            </div>
+          )}
+
+          <form onSubmit={handleSubmit}>
+            {/* USERNAME (Sin icono) */}
+            <div className="form-floating mb-3">
               <input
                 type="text"
+                className="form-control rounded-3" // Eliminado ps-5
+                id="floatingUser"
                 name="username"
-                className="form-control bg-secondary text-white border-0"
-                value={formData.username}
+                placeholder="Usuario"
                 onChange={handleChange}
                 required
-                placeholder="Elige un usuario"
               />
+              <label htmlFor="floatingUser">Nombre de Usuario (Nick)</label>{" "}
+              {/* Eliminado ps-4 */}
             </div>
 
-            {/* Input Contraseña */}
-            <div className="mb-3 text-start">
-              <label className="form-label text-light">Contraseña</label>
+            {/* EMAIL (Sin icono) */}
+            <div className="form-floating mb-3">
+              <input
+                type="email"
+                className="form-control rounded-3" // Eliminado ps-5
+                id="floatingEmail"
+                name="email"
+                placeholder="name@example.com"
+                onChange={handleChange}
+                required
+              />
+              <label htmlFor="floatingEmail">Correo Electrónico</label>{" "}
+              {/* Eliminado ps-4 */}
+            </div>
+
+            {/* PASSWORD (Sin icono) */}
+            <div className="form-floating mb-4">
               <input
                 type="password"
+                className="form-control rounded-3" // Eliminado ps-5
+                id="floatingPass"
                 name="password"
-                className="form-control bg-secondary text-white border-0"
-                value={formData.password}
+                placeholder="Contraseña"
                 onChange={handleChange}
                 required
-                placeholder="********"
-                minLength={4} // Opcional: Validación HTML básica
               />
+              <label htmlFor="floatingPass">Contraseña</label>{" "}
+              {/* Eliminado ps-4 */}
             </div>
 
-            {/* --- NUEVO: INPUT CONFIRMAR CONTRASEÑA --- */}
-            <div className="mb-3 text-start">
-              <label className="form-label text-light">
-                Confirmar Contraseña
-              </label>
-              <input
-                type="password"
-                name="confirmPassword"
-                className={`form-control bg-secondary text-white border-0 ${
-                  confirmPassword && formData.password !== confirmPassword
-                    ? "is-invalid"
-                    : ""
-                }`}
-                value={confirmPassword}
-                onChange={(e) => setConfirmPassword(e.target.value)}
-                required
-                placeholder="Repite tu contraseña"
-              />
-              {/* Feedback visual inmediato (opcional) */}
-              {confirmPassword && formData.password !== confirmPassword && (
-                <div className="invalid-feedback text-warning">
-                  Las contraseñas no coinciden
-                </div>
-              )}
-            </div>
-
-            {/* Selector de Rol */}
-            <div className="mb-4 text-start">
-              <label className="form-label text-light">Tipo de Cuenta</label>
-              <select
-                name="rol"
-                className="form-select bg-secondary text-white border-0"
-                value={formData.rol}
-                onChange={handleChange}
-              >
-                <option value="USER">Jugador (Usuario Normal)</option>
-                <option value="ADMIN">Comandante (Administrador)</option>
-              </select>
-              <div className="form-text text-muted">
-                * Selecciona "Comandante" para acceder al Panel Admin.
-              </div>
-            </div>
-
-            {/* Botón Registrar */}
-            <div className="d-grid gap-2">
-              <button
-                type="submit"
-                disabled={loading}
-                className="btn btn-primary fw-bold py-2"
-              >
-                {loading ? "Creando..." : "REGISTRARSE"}
-              </button>
-            </div>
-
-            {/* Mensajes */}
-            {error && (
-              <div
-                className="alert alert-danger mt-3 d-flex align-items-center p-2"
-                role="alert"
-              >
-                <span className="fs-5 me-2">⚠️</span>
-                <div className="small fw-bold">{error}</div>
-              </div>
-            )}
-
-            {success && (
-              <div
-                className="alert alert-success mt-3 d-flex align-items-center p-2"
-                role="alert"
-              >
-                <span className="fs-5 me-2">✅</span>
-                <div className="small fw-bold">{success}</div>
-              </div>
-            )}
-          </form>
-
-          <div className="mt-4 text-center border-top border-secondary pt-3">
-            <p className="text-muted small mb-1">¿Ya tienes cuenta?</p>
-            <Link
-              to="/login"
-              className="text-decoration-none fw-bold text-info"
+            <button
+              type="submit"
+              className="btn btn-primary w-100 py-3 fw-bold rounded-pill shadow-sm hover-scale"
             >
-              Inicia sesión aquí
-            </Link>
-          </div>
+              REGISTRARSE <i className="bx bx-right-arrow-alt ms-1"></i>
+            </button>
+          </form>
+        </div>
+
+        <div className="card-footer text-center py-3 bg-body border-0">
+          <small className="text-muted">¿Ya tienes cuenta? </small>
+          <Link to="/login" className="text-decoration-none fw-bold">
+            Inicia Sesión
+          </Link>
         </div>
       </div>
     </div>
   );
-};
+}
 
 export default Registro;

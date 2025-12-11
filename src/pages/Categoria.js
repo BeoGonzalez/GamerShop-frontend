@@ -8,7 +8,7 @@ function Categoria() {
   // Estados
   const [productos, setProductos] = useState([]);
   const [categorias, setCategorias] = useState([]);
-  const [categoriaSeleccionada, setCategoriaSeleccionada] = useState("Todos");
+  const [categoriaSeleccionada, setCategoriaSeleccionada] = useState("Todas");
   const [cargando, setCargando] = useState(true);
 
   const navigate = useNavigate();
@@ -27,7 +27,7 @@ function Categoria() {
 
         // Extraer categorías únicas
         const uniqueCats = [
-          "Todos",
+          "Todas",
           ...new Set(data.map((p) => p.categoria?.nombre || "General")),
         ];
         setCategorias(uniqueCats);
@@ -42,7 +42,7 @@ function Categoria() {
 
   // 2. Filtrar productos
   const productosFiltrados =
-    categoriaSeleccionada === "Todos"
+    categoriaSeleccionada === "Todas"
       ? productos
       : productos.filter(
           (p) => (p.categoria?.nombre || "General") === categoriaSeleccionada
@@ -102,8 +102,8 @@ function Categoria() {
         <div className="col-lg-3 mb-4">
           <div className="sticky-top" style={{ top: "100px", zIndex: 10 }}>
             <div className="card shadow-sm border-0 rounded-4 overflow-hidden">
-              <div className="card-header bg-primary text-white fw-bold py-3">
-                Categorías
+              <div className="card-header bg-primary text-white fw-bold py-3 d-flex align-items-center gap-2">
+                <i className="bx bx-folder-open"></i> Categorías
               </div>
               <div className="list-group list-group-flush">
                 {cargando ? (
@@ -120,9 +120,20 @@ function Categoria() {
                       }`}
                       style={{ cursor: "pointer", transition: "all 0.2s" }}
                     >
-                      {cat}
-                      {/* Badge con la cantidad (Opcional) */}
-                      {categoriaSeleccionada === cat && <span>✨</span>}
+                      <span>
+                        <i
+                          className={`bx ${
+                            categoriaSeleccionada === cat
+                              ? "bx-radio-circle-marked"
+                              : "bx-radio-circle"
+                          } me-2`}
+                        ></i>
+                        {cat}
+                      </span>
+                      {/* Icono de estrella si está activo */}
+                      {categoriaSeleccionada === cat && (
+                        <i className="bx bxs-star text-warning"></i>
+                      )}
                     </button>
                   ))
                 )}
@@ -135,8 +146,9 @@ function Categoria() {
         <div className="col-lg-9">
           {/* Encabezado de la Sección */}
           <div className="d-flex justify-content-between align-items-center mb-4">
-            <h3 className="m-0 fw-bold text-body">
-              {categoriaSeleccionada === "Todos"
+            <h3 className="m-0 fw-bold text-body d-flex align-items-center gap-2">
+              <i className="bx bx-grid-alt"></i>
+              {categoriaSeleccionada === "Todas"
                 ? "Todos los Productos"
                 : categoriaSeleccionada}
             </h3>
@@ -149,6 +161,7 @@ function Categoria() {
             {!cargando && productosFiltrados.length === 0 && (
               <div className="col-12 py-5 text-center">
                 <div className="py-5 bg-body-tertiary rounded-4">
+                  <i className="bx bx-ghost fs-1 text-muted mb-3"></i>
                   <h4>Sin resultados</h4>
                   <p className="text-muted">
                     No encontramos productos en esta categoría.
@@ -181,14 +194,16 @@ function Categoria() {
                         }}
                       />
                     ) : null}
-                    <span
+
+                    {/* Icono vectorial de Joystick */}
+                    <i
+                      className="bx bx-joystick text-secondary opacity-25"
                       style={{
-                        fontSize: "3rem",
+                        fontSize: "5rem",
                         display: prod.imagen ? "none" : "block",
                       }}
-                    >
-                      🎮
-                    </span>
+                    ></i>
+
                     {prod.stock <= 0 && (
                       <div className="position-absolute top-0 end-0 bg-danger text-white px-2 py-1 m-2 rounded small fw-bold">
                         AGOTADO
@@ -225,7 +240,7 @@ function Categoria() {
                       </div>
 
                       <button
-                        className={`btn w-100 fw-bold rounded-3 ${
+                        className={`btn w-100 fw-bold rounded-3 d-flex align-items-center justify-content-center gap-2 ${
                           isAuth
                             ? "btn-outline-primary"
                             : "btn-outline-secondary"
@@ -233,11 +248,19 @@ function Categoria() {
                         onClick={() => handleAddToCart(prod)}
                         disabled={prod.stock <= 0}
                       >
-                        {prod.stock > 0
-                          ? isAuth
-                            ? "Añadir 🛒"
-                            : "Login"
-                          : "Agotado"}
+                        {prod.stock > 0 ? (
+                          isAuth ? (
+                            <>
+                              Añadir <i className="bx bx-cart-add fs-5"></i>
+                            </>
+                          ) : (
+                            <>
+                              Login <i className="bx bx-log-in-circle fs-5"></i>
+                            </>
+                          )
+                        ) : (
+                          "Agotado"
+                        )}
                       </button>
                     </div>
                   </div>

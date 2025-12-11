@@ -1,26 +1,28 @@
-/* Importamos la fuente Montserrat */
 @import url("https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800&display=swap");
 
-/* --- CONFIGURACIÓN GLOBAL --- */
+/* --- CONFIGURACIÓN GLOBAL REFORZADA --- */
+/* Aplicamos Montserrat a TODO, incluyendo elementos de formulario y pseudo-elementos */
+* {
+  font-family: "Montserrat", sans-serif !important;
+}
+
 body {
   margin: 0;
   padding: 0;
-  font-family: "Montserrat", sans-serif;
+  /* Bootstrap usa variables, así que también las actualizamos por si acaso */
+  --bs-body-font-family: "Montserrat", sans-serif;
+  --bs-font-sans-serif: "Montserrat", sans-serif;
 
-  /* IMPORTANTE: Dejar que Bootstrap maneje el fondo y el color */
-  /* Al usar data-bs-theme="dark", Bootstrap aplica automáticamente:
-     background-color: var(--bs-body-bg);
-     color: var(--bs-body-color);
-  */
   transition: background-color 0.3s ease, color 0.3s ease;
 }
 
-/* Ajustes para inputs y botones */
+/* Ajustes específicos para que inputs y botones no pierdan la fuente */
 button,
 input,
+optgroup,
 select,
 textarea {
-  font-family: inherit;
+  font-family: "Montserrat", sans-serif;
 }
 
 /* Animación del texto GamerShop (Opcional, si la quieres conservar) */
