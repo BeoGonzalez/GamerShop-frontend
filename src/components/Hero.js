@@ -1,3 +1,4 @@
+import React from "react";
 import Gif from "../assets/animacion.gif";
 
 function Hero() {

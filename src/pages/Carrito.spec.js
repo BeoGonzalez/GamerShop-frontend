@@ -1,104 +1,91 @@
-import React, { useState, useEffect } from "react";
+import React from "react";
+import { render, screen, fireEvent, waitFor } from "@testing-library/react";
+import { MemoryRouter } from "react-router-dom";
+import Carrito from "./Carrito";
 
-describe("Carrito - lógica con useState y useEffect", function () {
-  let carrito;
-  let setCarrito;
-  let usuario;
-  let setUsuario;
-  let productos;
+describe("Página: Carrito", () => {
+  beforeEach(() => {
+    localStorage.clear();
+  });
 
-  beforeEach(function () {
-    carrito = [];
-    setCarrito = (nuevo) => {
-      carrito = nuevo;
-    };
-    usuario = null;
-    setUsuario = (u) => {
-      usuario = u;
-    };
+  // --- TEST CORREGIDO ---
+  it('debería mostrar mensaje de "carrito vacío" si no hay items', () => {
+    // 1. SIMULAMOS LOGIN (Para pasar la pantalla de "Acceso Restringido")
+    localStorage.setItem("username", "TestUser");
+    localStorage.setItem("jwt_token", "fake-token");
 
-    productos = [
-      { id: 1, nombre: "Mouse Gamer", precio: 20000 },
-      { id: 2, nombre: "Audífonos Gamer", precio: 55000 },
-      { id: 3, nombre: "Teclado Gamer RGB", precio: 90000 },
+    // NO agregamos nada al carrito ('carrito_TestUser' no existe o está vacío)
+
+    render(
+      <MemoryRouter>
+        <Carrito />
+      </MemoryRouter>
+    );
+
+    // 2. Ahora sí debería aparecer el mensaje de vacío
+    // Busca la palabra "vacío" ignorando mayúsculas/minúsculas
+    const mensajeVacio = screen.getByText(/vacío/i);
+    expect(mensajeVacio).toBeTruthy();
+  });
+
+  it("debería cargar productos del localStorage y calcular el total", async () => {
+    const usuario = "GamerPro";
+    const productosFalsos = [
+      { id: 1, nombre: "Mouse Gamer", precio: 1000, cantidad: 2 },
+      { id: 2, nombre: "Teclado Mecánico", precio: 5000, cantidad: 1 },
     ];
+
+    // Simulamos Login Y Datos del carrito
+    localStorage.setItem("username", usuario);
+    localStorage.setItem("jwt_token", "fake-token");
+    localStorage.setItem(`carrito_${usuario}`, JSON.stringify(productosFalsos));
+
+    render(
+      <MemoryRouter>
+        <Carrito />
+      </MemoryRouter>
+    );
+
+    expect(screen.getByText("Mouse Gamer")).toBeTruthy();
+
+    // Buscamos el total (7000)
+    // Usamos findByText por si el cálculo tarda un milisegundo
+    const totalElement = await screen.findByText(/7.?000/);
+    expect(totalElement).toBeTruthy();
   });
 
-  function agregarAlCarrito(producto) {
-    const index = carrito.findIndex((p) => p.nombre === producto.nombre);
-    if (index !== -1) {
-      const nuevoCarrito = [...carrito];
-      nuevoCarrito[index].cantidad += 1;
-      setCarrito(nuevoCarrito);
-    } else {
-      setCarrito([...carrito, { ...producto, cantidad: 1 }]);
-    }
-  }
+  it("debería intentar procesar el pago al hacer clic en Pagar", async () => {
+    const usuario = "GamerPro";
+    const productosFalsos = [
+      { id: 1, nombre: "PC Gamer", precio: 10000, cantidad: 1 },
+    ];
 
-  function eliminarDelCarrito(index) {
-    setCarrito(carrito.filter((_, i) => i !== index));
-  }
+    localStorage.setItem("username", usuario);
+    localStorage.setItem("jwt_token", "fake-token");
+    localStorage.setItem(`carrito_${usuario}`, JSON.stringify(productosFalsos));
 
-  function total() {
-    return carrito.reduce((sum, item) => sum + item.precio * item.cantidad, 0);
-  }
+    // Mock del Backend para la compra
+    spyOn(window, "fetch").and.returnValue(
+      Promise.resolve({
+        ok: true,
+        json: () => Promise.resolve({ mensaje: "Compra exitosa" }),
+      })
+    );
 
-  it("debería agregar un producto al carrito", function () {
-    agregarAlCarrito(productos[0]);
-    expect(carrito.length).toBe(1);
-    expect(carrito[0].cantidad).toBe(1);
+    // Mock de alert para que no detenga el test
+    spyOn(window, "alert");
 
-    // Agregar el mismo producto otra vez
-    agregarAlCarrito(productos[0]);
-    expect(carrito[0].cantidad).toBe(2);
-  });
+    render(
+      <MemoryRouter>
+        <Carrito />
+      </MemoryRouter>
+    );
 
-  it("debería eliminar un producto del carrito", function () {
-    agregarAlCarrito(productos[0]);
-    agregarAlCarrito(productos[1]);
-    expect(carrito.length).toBe(2);
+    const btnPagar = screen.getByText(/Pagar Ahora/i);
+    fireEvent.click(btnPagar);
 
-    eliminarDelCarrito(0);
-    expect(carrito.length).toBe(1);
-    expect(carrito[0].nombre).toBe("Audífonos Gamer");
-  });
-
-  it("debería calcular el total correctamente", function () {
-    agregarAlCarrito(productos[0]); // 20000
-    agregarAlCarrito(productos[1]); // 55000
-    agregarAlCarrito(productos[0]); // +20000 = 95000
-    expect(total()).toBe(95000);
-  });
-
-  it("debería vaciar el carrito al pagar con usuario", function () {
-    usuario = { username: "juan" }; // simular usuario logueado
-    agregarAlCarrito(productos[0]);
-    agregarAlCarrito(productos[1]);
-
-    // Función de pagar simplificada
-    function pagar() {
-      if (!usuario) return "No hay usuario";
-      if (carrito.length === 0) return "Carrito vacío";
-      setCarrito([]);
-      return "Compra realizada";
-    }
-
-    const mensaje = pagar();
-    expect(mensaje).toBe("Compra realizada");
-    expect(carrito.length).toBe(0);
-  });
-
-  it("debería impedir pagar sin usuario", function () {
-    agregarAlCarrito(productos[0]);
-    function pagar() {
-      if (!usuario) return "No hay usuario";
-      if (carrito.length === 0) return "Carrito vacío";
-      setCarrito([]);
-      return "Compra realizada";
-    }
-
-    const mensaje = pagar();
-    expect(mensaje).toBe("No hay usuario");
-    expect(carrito.length).toBe(1);
+    await waitFor(() => {
+      expect(window.fetch).toHaveBeenCalled();
+    });
   });
 });

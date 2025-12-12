@@ -11,7 +11,10 @@ function Login({ onLogin }) {
     e.preventDefault();
     setError(null);
 
+    console.log("🔍 TEST-LOG [1]: Submit iniciado. Email:", email);
+
     try {
+      // 1. Petición al Backend
       const response = await fetch(
         "https://gamershop-backend-1.onrender.com/auth/login",
         {
@@ -24,27 +27,39 @@ function Login({ onLogin }) {
         }
       );
 
+      console.log("🔍 TEST-LOG [2]: Fetch respondió. Status:", response.status);
+
       if (!response.ok) {
-        // Si el backend responde 401 o 404, lanzamos error controlado
-        throw new Error("Credenciales inválidas");
+        throw new Error("Credenciales inválidas o error de servidor");
       }
 
       const data = await response.json();
+      console.log("🔍 TEST-LOG [3]: Data recibida del JSON:", data);
 
-      // 1. Guardar en LocalStorage
-      // Aseguramos que los datos no sean null antes de guardar
-      if (data.token) localStorage.setItem("jwt_token", data.token);
-      if (data.username) localStorage.setItem("username", data.username);
-      if (data.rol) localStorage.setItem("rol", data.rol);
+      // 2. Guardar en LocalStorage
+      localStorage.setItem("jwt_token", data.token);
+      localStorage.setItem("username", data.username);
+      localStorage.setItem("rol", data.rol);
 
-      // 2. Actualizar App.js
-      // Verificamos si la función existe antes de llamarla para evitar crashes
+      // 3. Verificar datos críticos antes de llamar a onLogin
+      // Aquí suele estar el error: ¿data.rol existe? ¿data.username existe?
+      console.log("🔍 TEST-LOG [4]: Validando datos...", {
+        rol: data.rol,
+        username: data.username,
+        propOnLogin: typeof onLogin,
+      });
+
+      // 4. Actualizar estado global
       if (typeof onLogin === "function") {
+        console.log("🔍 TEST-LOG [5]: Llamando a onLogin()...");
         onLogin(data.rol, data.username);
+      } else {
+        console.error(
+          "❌ TEST-LOG: ¡onLogin no es una función! Revisa App.js o el Test"
+        );
       }
 
-      // 3. Redirección
-      // Usamos setTimeout para asegurar que el estado se actualice antes de cambiar de página
+      // 5. Redirección
       setTimeout(() => {
         if (data.rol === "ADMIN") {
           navigate("/admin");
@@ -53,15 +68,8 @@ function Login({ onLogin }) {
         }
       }, 100);
     } catch (err) {
-      console.error("❌ ERROR REAL EN EL LOGIN:", err); // MIRA LA CONSOLA DEL NAVEGADOR
-
-      // Si el error es de conexión o código, mostramos algo genérico,
-      // pero si es credenciales, mostramos eso.
-      if (err.message === "Credenciales inválidas") {
-        setError("Correo o contraseña incorrectos.");
-      } else {
-        setError("Ocurrió un error al procesar el ingreso. Revisa la consola.");
-      }
+      console.error("❌ TEST-LOG: ERROR CAPTURADO EN CATCH:", err);
+      setError("Correo o contraseña incorrectos.");
     }
   };
 
