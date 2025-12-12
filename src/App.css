@@ -154,3 +154,37 @@ textarea {
   padding: 0;
   box-shadow: 0 4px 10px rgba(25, 135, 84, 0.4);
 }
+
+/* --- MEJORA DE CONTRASTE PARA MODO OSCURO --- */
+[data-bs-theme="dark"] body {
+  --bs-body-color: #ffffff !important; /* Texto principal: Blanco Puro */
+  --bs-body-color-rgb: 255, 255, 255;
+  --bs-secondary-color: #d1d1d1 !important; /* Texto secundario: Gris muy claro (no oscuro) */
+}
+
+/* Forzar Inputs y Textareas a ser muy legibles */
+[data-bs-theme="dark"] .form-control,
+[data-bs-theme="dark"] .form-select {
+  background-color: #212529; /* Fondo oscuro sólido */
+  border-color: #495057;
+  color: #ffffff !important; /* Texto que escribes: Blanco */
+}
+
+[data-bs-theme="dark"] .form-control::placeholder {
+  color: #a0a0a0 !important; /* Placeholder: Gris claro */
+}
+
+/* Tarjetas con borde sutil para que no se pierdan en el fondo negro */
+[data-bs-theme="dark"] .card {
+  border: 1px solid #373b3e;
+}
+
+/* Etiquetas de formularios */
+[data-bs-theme="dark"] .form-label {
+  color: #f8f9fa !important; /* Casi blanco */
+}
+
+/* Textos "muted" que ahora serán más claros */
+[data-bs-theme="dark"] .text-muted {
+  color: #adb5bd !important; /* Un gris mucho más claro que el default */
+}

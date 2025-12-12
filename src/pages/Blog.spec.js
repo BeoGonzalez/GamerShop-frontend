@@ -1,6 +1,6 @@
 import React from "react";
 import { render, screen } from "@testing-library/react";
-import { MemoryRouter } from "react-router-dom";
+import { MemoryRouter } from "react-router-dom"; // <--- Recuerda usar MemoryRouter
 import Blog from "./Blog";
 
 describe("Página: Blog", () => {
@@ -11,8 +11,9 @@ describe("Página: Blog", () => {
       </MemoryRouter>
     );
 
-    // Verificamos que aparezca el título de la comunidad
-    expect(screen.getByText(/Comunidad GamerShop/i)).toBeTruthy();
+    // CAMBIO: Buscamos "Foro Gamer" en lugar de "Comunidad GamerShop"
+    expect(screen.getByText(/Foro Gamer/i)).toBeTruthy();
+
     // Verificamos algún post de ejemplo (JuanGamer99)
     expect(screen.getByText(/JuanGamer99/i)).toBeTruthy();
   });
@@ -27,13 +28,13 @@ describe("Página: Blog", () => {
 
     // No debería haber inputs
     expect(screen.queryByPlaceholderText(/Título/i)).toBeNull();
-    // Debería pedir iniciar sesión
+    // CAMBIO: El texto ahora es "Inicia sesión para crear un tema."
     expect(screen.getByText(/Inicia sesión para crear un tema/i)).toBeTruthy();
   });
 
   it("SÍ debería mostrar formulario si el usuario está logueado", () => {
+    localStorage.setItem("jwt_token", "fake"); // El componente verifica jwt_token
     localStorage.setItem("username", "Tester");
-    localStorage.setItem("rol", "USER");
 
     render(
       <MemoryRouter>

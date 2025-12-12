@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 
-// --- COMPONENTE INTERNO: STOCK EDITOR VERTICAL ---
+// --- STOCK EDITOR (Sin cambios) ---
 const StockEditor = ({ producto, onGuardarCambio }) => {
   const [stockLocal, setStockLocal] = useState(producto.stock);
   const [haCambiado, setHaCambiado] = useState(false);
@@ -16,12 +16,10 @@ const StockEditor = ({ producto, onGuardarCambio }) => {
       setHaCambiado(true);
     }
   };
-
   const handleSumar = () => {
     setStockLocal(stockLocal + 1);
     setHaCambiado(true);
   };
-
   const handleChangeInput = (e) => {
     const val = parseInt(e.target.value);
     if (!isNaN(val) && val >= 0) {
@@ -29,28 +27,21 @@ const StockEditor = ({ producto, onGuardarCambio }) => {
       setHaCambiado(true);
     }
   };
-
   const handleSave = () => {
     onGuardarCambio(producto.id, stockLocal);
     setHaCambiado(false);
   };
 
   return (
-    // 'position-relative' es vital aquí para que el botón flotante sepa dónde ubicarse
     <div className="position-relative d-inline-flex align-items-center justify-content-center">
-      {/* CÁPSULA VERTICAL (CONTROLES) */}
       <div className="d-flex flex-column align-items-center">
-        {/* BOTÓN ARRIBA */}
         <button
           className="btn border-0 bg-transparent p-0 d-flex align-items-center justify-content-center text-secondary"
           onClick={handleSumar}
-          title="Aumentar"
           style={{ width: "24px", height: "24px" }}
         >
           <i className="bx bx-chevron-up fs-4"></i>
         </button>
-
-        {/* INPUT */}
         <input
           type="number"
           className="form-control border-0 bg-transparent text-center p-0 m-0 fw-bold"
@@ -58,30 +49,19 @@ const StockEditor = ({ producto, onGuardarCambio }) => {
           value={stockLocal}
           onChange={handleChangeInput}
         />
-
-        {/* BOTÓN ABAJO */}
         <button
           className="btn border-0 bg-transparent p-0 d-flex align-items-center justify-content-center text-secondary"
           onClick={handleRestar}
           disabled={stockLocal <= 0}
-          title="Disminuir"
           style={{ width: "24px", height: "24px" }}
         >
           <i className="bx bx-chevron-down fs-4"></i>
         </button>
       </div>
-
-      {/* BOTÓN FLOTANTE DE GUARDAR (ABSOLUTO)
-         - position-absolute: Lo saca del flujo normal (no empuja nada).
-         - top-50 translate-middle-y: Lo centra verticalmente.
-         - start-100: Lo mueve 100% a la derecha del contenedor.
-         - ms-2: Un pequeño margen para separarlo.
-      */}
       {haCambiado && (
         <button
           className="btn border-0 bg-transparent p-0 d-flex align-items-center justify-content-center text-success animate__animated animate__fadeIn position-absolute top-50 start-100 translate-middle-y ms-3"
           onClick={handleSave}
-          title="Guardar cambios"
           style={{ width: "30px", height: "30px" }}
         >
           <i className="bx bx-save fs-3"></i>
@@ -91,7 +71,7 @@ const StockEditor = ({ producto, onGuardarCambio }) => {
   );
 };
 
-// --- LISTA PRINCIPAL ---
+// --- LISTA ---
 function ProductoList({ productos, onEliminar, onActualizarStock }) {
   if (productos.length === 0) {
     return (
@@ -110,11 +90,14 @@ function ProductoList({ productos, onEliminar, onActualizarStock }) {
             <th scope="col" className="ps-4">
               Producto
             </th>
+            {/* Columna de descripción */}
+            <th scope="col" style={{ width: "25%" }}>
+              Descripción
+            </th>
             <th scope="col">Categoría</th>
             <th scope="col" className="text-end">
               Precio
             </th>
-            {/* Damos un poco más de ancho a la columna Inventario para el botón flotante */}
             <th
               scope="col"
               className="text-center"
@@ -132,6 +115,7 @@ function ProductoList({ productos, onEliminar, onActualizarStock }) {
             <tr key={prod.id}>
               <td className="ps-4">
                 <div className="d-flex align-items-center">
+                  {/* AQUÍ SE MUESTRA LA IMAGEN USANDO LA URL */}
                   <div
                     className="rounded-3 overflow-hidden shadow-sm me-3 d-flex align-items-center justify-content-center bg-white"
                     style={{ width: "45px", height: "45px" }}
@@ -165,6 +149,17 @@ function ProductoList({ productos, onEliminar, onActualizarStock }) {
                   </div>
                 </div>
               </td>
+
+              {/* AQUÍ SE MUESTRA LA DESCRIPCIÓN */}
+              <td>
+                <small
+                  className="text-muted d-block text-truncate"
+                  style={{ maxWidth: "200px" }}
+                >
+                  {prod.descripcion || "Sin descripción"}
+                </small>
+              </td>
+
               <td>
                 <span className="badge rounded-pill bg-body-secondary text-body border border-secondary-subtle">
                   {prod.categoria ? prod.categoria.nombre : "General"}
@@ -180,7 +175,6 @@ function ProductoList({ productos, onEliminar, onActualizarStock }) {
                 />
               </td>
               <td className="text-end pe-4">
-                {/* BOTÓN ELIMINAR - ROJO */}
                 <button
                   className="btn border-0 bg-transparent p-0 d-inline-flex align-items-center justify-content-center text-danger"
                   onClick={() => onEliminar(prod.id)}

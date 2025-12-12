@@ -61,7 +61,7 @@ function Contact() {
                       type="text"
                       className="form-control rounded-3"
                       id="floatingNombre"
-                      placeholder="Tu Nombre"
+                      placeholder=""
                       required
                     />
                     <label htmlFor="floatingNombre">Nombre de Jugador</label>
@@ -73,7 +73,7 @@ function Contact() {
                       type="email"
                       className="form-control rounded-3"
                       id="floatingEmail"
-                      placeholder="nombre@ejemplo.com"
+                      placeholder=""
                       required
                     />
                     <label htmlFor="floatingEmail">Correo Electrónico</label>
@@ -83,7 +83,7 @@ function Contact() {
                   <div className="form-floating mb-4">
                     <textarea
                       className="form-control rounded-3"
-                      placeholder="Escribe tu mensaje aquí"
+                      placeholder=""
                       id="floatingMensaje"
                       style={{ height: "150px" }}
                       required

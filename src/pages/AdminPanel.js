@@ -17,19 +17,21 @@ import ProfileView from "../components/admin/ProfileView";
 const API_URL = "https://gamershop-backend-1.onrender.com";
 
 function AdminPanel() {
+  // --- ESTADOS (Aquí es donde se define activeTab) ---
   const [activeTab, setActiveTab] = useState("dashboard");
 
+  // Estados de Datos
   const [productos, setProductos] = useState([]);
   const [categorias, setCategorias] = useState([]);
   const [usuarios, setUsuarios] = useState([]);
   const [ordenes, setOrdenes] = useState([]);
 
+  // Estados de UI
   const [cargando, setCargando] = useState(false);
   const [error, setError] = useState(null);
-
-  // --- NUEVO ESTADO PARA MENSAJES DE ÉXITO ---
   const [mensajeExito, setMensajeExito] = useState(null);
 
+  // --- HELPER: OBTENER HEADERS CON TOKEN ---
   const getAuthHeaders = () => {
     const token = localStorage.getItem("jwt_token");
     if (!token) return null;
@@ -39,22 +41,21 @@ function AdminPanel() {
     };
   };
 
+  // --- HELPER: MANEJAR ERROR DE AUTH ---
   const handleAuthError = () => {
     localStorage.clear();
     window.location.href = "/login";
   };
 
-  // --- HELPER PARA MOSTRAR ÉXITO TEMPORAL ---
   const mostrarExito = (mensaje) => {
     setMensajeExito(mensaje);
-    // El mensaje desaparece a los 3 segundos
     setTimeout(() => {
       setMensajeExito(null);
     }, 3000);
   };
 
   // ==========================================
-  // 1. CARGA DE DATOS
+  // 1. CARGA DE DATOS MAESTRA (FetchData)
   // ==========================================
   const fetchData = useCallback(async () => {
     setCargando(true);
@@ -66,19 +67,23 @@ function AdminPanel() {
     }
 
     try {
+      // A. Cargar Productos
       const resProd = await fetch(`${API_URL}/productos`);
       if (resProd.ok) setProductos(await resProd.json());
 
+      // B. Cargar Categorías
       const resCat = await fetch(`${API_URL}/categorias`);
       if (resCat.ok) setCategorias(await resCat.json());
 
+      // C. Cargar Usuarios
       try {
         const resUser = await axios.get(`${API_URL}/usuarios`, { headers });
         setUsuarios(resUser.data);
       } catch (e) {
-        console.warn("Error cargando usuarios", e);
+        console.warn("Error cargando usuarios (¿Eres Admin?)", e);
       }
 
+      // D. Cargar Órdenes
       try {
         const resOrd = await axios.get(`${API_URL}/ordenes`, { headers });
         setOrdenes(resOrd.data);
@@ -93,14 +98,14 @@ function AdminPanel() {
     }
   }, []);
 
+  // Cargar todo al iniciar el componente
   useEffect(() => {
     fetchData();
   }, [fetchData]);
 
   // ==========================================
-  // 2. ACCIONES DE PRODUCTOS
+  // 2. ACCIONES DEL CRUD DE PRODUCTOS
   // ==========================================
-
   const handleActualizarStock = async (id, nuevoStock) => {
     const headers = getAuthHeaders();
     try {
@@ -116,7 +121,6 @@ function AdminPanel() {
         headers,
       });
 
-      // --- MENSAJE DE ÉXITO AL ACTUALIZAR STOCK ---
       mostrarExito("✅ Stock modificado correctamente.");
       fetchData();
     } catch (e) {
@@ -130,8 +134,6 @@ function AdminPanel() {
     const headers = getAuthHeaders();
     try {
       await axios.post(`${API_URL}/productos`, data, { headers });
-
-      // --- MENSAJE DE ÉXITO AL CREAR PRODUCTO ---
       mostrarExito("✅ Producto agregado correctamente.");
       fetchData();
     } catch (e) {
@@ -156,7 +158,7 @@ function AdminPanel() {
   };
 
   // ==========================================
-  // 3. OTRAS ACCIONES
+  // 3. OTRAS ACCIONES (Categorías, Usuarios)
   // ==========================================
   const handleAddCategory = async (data) => {
     const headers = getAuthHeaders();
@@ -193,13 +195,13 @@ function AdminPanel() {
   };
 
   // ==========================================
-  // RENDERIZADO
+  // RENDERIZADO (VISTA)
   // ==========================================
   return (
     <div className="d-flex" style={{ minHeight: "calc(100vh - 80px)" }}>
-      {/* SIDEBAR */}
+      {/* --- SIDEBAR IZQUIERDO --- */}
       <div
-        className="bg-body-tertiary border-end p-3 d-flex flex-column"
+        className="bg-body-tertiary border-end border-secondary-subtle p-3 d-flex flex-column"
         style={{ width: "250px", minHeight: "100%" }}
       >
         <h5 className="fw-bold mb-4 px-2 text-primary d-flex align-items-center gap-2">
@@ -207,62 +209,42 @@ function AdminPanel() {
         </h5>
 
         <div className="nav flex-column nav-pills gap-2">
+          {[
+            { id: "dashboard", icon: "bx-bar-chart-alt-2", label: "Dashboard" },
+            { id: "products", icon: "bx-cube", label: "Productos" },
+            { id: "categories", icon: "bx-category", label: "Categorías" },
+            { id: "orders", icon: "bx-receipt", label: "Ventas" },
+            { id: "users", icon: "bx-user-circle", label: "Usuarios" },
+          ].map((tab) => (
+            <button
+              key={tab.id}
+              className={`nav-link text-start d-flex align-items-center ${
+                activeTab === tab.id
+                  ? "active fw-bold shadow-sm"
+                  : "text-body hover-bg-secondary"
+              }`}
+              onClick={() => setActiveTab(tab.id)}
+            >
+              <i className={`bx ${tab.icon} me-2 fs-5`}></i> {tab.label}
+            </button>
+          ))}
+          <hr className="text-secondary" />
           <button
-            className={`nav-link text-start ${
-              activeTab === "dashboard" ? "active" : ""
-            }`}
-            onClick={() => setActiveTab("dashboard")}
-          >
-            <i className="bx bx-bar-chart-alt-2 me-2"></i> Dashboard
-          </button>
-          <button
-            className={`nav-link text-start ${
-              activeTab === "products" ? "active" : ""
-            }`}
-            onClick={() => setActiveTab("products")}
-          >
-            <i className="bx bx-cube me-2"></i> Productos
-          </button>
-          <button
-            className={`nav-link text-start ${
-              activeTab === "categories" ? "active" : ""
-            }`}
-            onClick={() => setActiveTab("categories")}
-          >
-            <i className="bx bx-category me-2"></i> Categorías
-          </button>
-          <button
-            className={`nav-link text-start ${
-              activeTab === "orders" ? "active" : ""
-            }`}
-            onClick={() => setActiveTab("orders")}
-          >
-            <i className="bx bx-receipt me-2"></i> Ventas
-          </button>
-          <button
-            className={`nav-link text-start ${
-              activeTab === "users" ? "active" : ""
-            }`}
-            onClick={() => setActiveTab("users")}
-          >
-            <i className="bx bx-user-circle me-2"></i> Usuarios
-          </button>
-          <hr />
-          <button
-            className={`nav-link text-start ${
-              activeTab === "profile" ? "active" : ""
+            className={`nav-link text-start d-flex align-items-center ${
+              activeTab === "profile" ? "active shadow-sm" : "text-body"
             }`}
             onClick={() => setActiveTab("profile")}
           >
-            <i className="bx bx-id-card me-2"></i> Mi Perfil
+            <i className="bx bx-id-card me-2 fs-5"></i> Mi Perfil
           </button>
         </div>
       </div>
 
-      {/* CONTENIDO */}
+      {/* --- CONTENIDO PRINCIPAL (DERECHA) --- */}
       <div className="flex-grow-1 p-4 bg-body" style={{ overflowY: "auto" }}>
+        {/* Header Dinámico */}
         <div className="d-flex justify-content-between align-items-center mb-4">
-          <h2 className="fw-bold text-capitalize">
+          <h2 className="fw-bold text-capitalize text-body">
             {activeTab === "orders" ? "Boletas & Ventas" : activeTab}
           </h2>
           {cargando && (
@@ -270,7 +252,7 @@ function AdminPanel() {
           )}
         </div>
 
-        {/* --- AQUÍ ESTÁ LA NUEVA ALERTA DE ÉXITO --- */}
+        {/* Alertas de Éxito */}
         {mensajeExito && (
           <div className="alert alert-success d-flex align-items-center mb-4 rounded-4 shadow-sm animate__animated animate__fadeInDown">
             <i className="bx bx-check-circle fs-4 me-2"></i>
@@ -278,7 +260,7 @@ function AdminPanel() {
           </div>
         )}
 
-        {/* Alerta de Error */}
+        {/* Alertas de Error */}
         {error && (
           <div className="alert alert-danger d-flex align-items-center mb-4 rounded-4 shadow-sm">
             <i className="bx bx-error-circle fs-4 me-2"></i>
@@ -286,60 +268,68 @@ function AdminPanel() {
           </div>
         )}
 
-        {/* VISTAS */}
-        {activeTab === "dashboard" && (
-          <>
-            <DashboardStats
-              productos={productos}
-              ordenes={ordenes}
-              usuarios={usuarios}
-            />
-            <DashboardCharts ordenes={ordenes} productos={productos} />
-          </>
-        )}
+        {/* --- VISTAS SEGÚN LA PESTAÑA ACTIVA --- */}
+        <div className="animate__animated animate__fadeIn">
+          {/* 1. DASHBOARD */}
+          {activeTab === "dashboard" && (
+            <>
+              <DashboardStats
+                productos={productos}
+                ordenes={ordenes}
+                usuarios={usuarios}
+              />
+              <DashboardCharts ordenes={ordenes} productos={productos} />
+            </>
+          )}
 
-        {activeTab === "products" && (
-          <div className="row g-4 animate__animated animate__fadeIn">
-            <div className="col-lg-4">
-              <div className="card border-0 shadow-lg rounded-4 h-100">
-                <div className="card-header bg-transparent border-0 pt-4 ps-4">
-                  <h5 className="m-0 fw-bold d-flex align-items-center gap-2">
-                    <i className="bx bx-plus-circle text-primary"></i> Nuevo
-                  </h5>
-                </div>
-                <div className="card-body p-4">
-                  <ProductoForm
-                    onGuardar={guardarProducto}
-                    categoriasDisponibles={categorias}
-                  />
+          {/* 2. PRODUCTOS */}
+          {activeTab === "products" && (
+            <div className="row g-4">
+              <div className="col-lg-4">
+                <div className="card border-0 shadow-lg rounded-4 h-100 bg-body-tertiary">
+                  <div className="card-header bg-transparent border-0 pt-4 ps-4">
+                    <h5 className="m-0 fw-bold d-flex align-items-center gap-2 text-primary">
+                      <i className="bx bx-plus-circle"></i> Nuevo Producto
+                    </h5>
+                  </div>
+                  <div className="card-body p-4">
+                    <ProductoForm
+                      onGuardar={guardarProducto}
+                      categoriasDisponibles={categorias}
+                    />
+                  </div>
                 </div>
               </div>
+              <div className="col-lg-8">
+                <ProductoList
+                  productos={productos}
+                  onEliminar={eliminarProducto}
+                  onActualizarStock={handleActualizarStock}
+                />
+              </div>
             </div>
-            <div className="col-lg-8">
-              <ProductoList
-                productos={productos}
-                onEliminar={eliminarProducto}
-                onActualizarStock={handleActualizarStock}
-              />
-            </div>
-          </div>
-        )}
+          )}
 
-        {activeTab === "categories" && (
-          <CategoriesManager
-            categorias={categorias}
-            onAddCategory={handleAddCategory}
-            onDeleteCategory={handleDeleteCategory}
-          />
-        )}
+          {/* 3. CATEGORÍAS */}
+          {activeTab === "categories" && (
+            <CategoriesManager
+              categorias={categorias}
+              onAddCategory={handleAddCategory}
+              onDeleteCategory={handleDeleteCategory}
+            />
+          )}
 
-        {activeTab === "orders" && <OrdersView ordenes={ordenes} />}
+          {/* 4. VENTAS (BOLETAS) */}
+          {activeTab === "orders" && <OrdersView ordenes={ordenes} />}
 
-        {activeTab === "users" && (
-          <UsersManager usuarios={usuarios} onDeleteUser={handleDeleteUser} />
-        )}
+          {/* 5. USUARIOS */}
+          {activeTab === "users" && (
+            <UsersManager usuarios={usuarios} onDeleteUser={handleDeleteUser} />
+          )}
 
-        {activeTab === "profile" && <ProfileView />}
+          {/* 6. PERFIL */}
+          {activeTab === "profile" && <ProfileView />}
+        </div>
       </div>
     </div>
   );
