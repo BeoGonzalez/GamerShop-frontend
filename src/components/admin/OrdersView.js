@@ -2,93 +2,50 @@ import React from "react";
 
 const OrdersView = ({ ordenes }) => {
   return (
-    <div className="card border-0 shadow-lg rounded-4 animate__animated animate__fadeIn">
-      <div className="card-header bg-transparent border-0 pt-4 ps-4 d-flex justify-content-between align-items-center">
-        <h4 className="fw-bold mb-0">
-          <i className="bx bx-receipt text-success me-2"></i>
-          Boletas Emitidas
-        </h4>
-        <span className="badge bg-success bg-opacity-10 text-success border border-success px-3 py-2 rounded-pill">
-          {ordenes.length} Transacciones
-        </span>
+    <div className="card border-0 shadow-lg bg-body-tertiary rounded-4 animate__animated animate__fadeIn">
+      <div className="card-header bg-transparent border-0 pt-4 ps-4">
+        <h5 className="fw-bold text-primary">
+          <i className="bx bx-receipt"></i> Historial de Ventas
+        </h5>
       </div>
-
-      <div className="card-body p-4">
+      <div className="card-body p-0">
         <div className="table-responsive">
-          <table className="table table-hover align-middle">
-            <thead className="table-light">
+          <table className="table table-hover align-middle mb-0">
+            <thead className="bg-body-secondary">
               <tr>
-                <th scope="col"># Boleta</th>
-                <th scope="col">Usuario (Cliente)</th>
-                <th scope="col">Fecha Emisión</th>
-                <th scope="col" className="text-center">
-                  Items
-                </th>
-                <th scope="col" className="text-end">
-                  Monto Total
-                </th>
-                <th scope="col" className="text-center">
-                  Estado
-                </th>
+                <th className="ps-4">ID</th>
+                <th>Fecha</th>
+                <th>Usuario</th>
+                <th>Items</th>
+                <th>Total</th>
+                <th className="text-end pe-4">Estado</th>
               </tr>
             </thead>
             <tbody>
-              {ordenes.map((orden) => (
-                <tr key={orden.id}>
-                  {/* ID DE BOLETA */}
-                  <td className="fw-bold text-secondary">
-                    #{String(orden.id).padStart(6, "0")}
+              {ordenes.map((ord) => (
+                <tr key={ord.id}>
+                  <td className="ps-4 fw-bold">#{ord.id}</td>
+                  <td className="text-muted small">
+                    {new Date().toLocaleDateString()}
                   </td>
-
-                  {/* USUARIO */}
+                  <td className="text-body fw-bold">
+                    {ord.usuario?.username || "Anónimo"}
+                  </td>
                   <td>
-                    <div className="d-flex align-items-center">
-                      <div className="bg-primary bg-opacity-10 text-primary rounded-circle p-2 me-2">
-                        <i className="bx bx-user"></i>
-                      </div>
-                      <span className="fw-bold text-dark">
-                        {orden.username || "Desconocido"}
-                      </span>
-                    </div>
-                  </td>
-
-                  {/* FECHA (Viene formateada del Backend) */}
-                  <td>
-                    <i className="bx bx-calendar text-muted me-1"></i>
-                    {orden.fecha}
-                  </td>
-
-                  {/* CANTIDAD ITEMS */}
-                  <td className="text-center">
                     <span className="badge bg-secondary rounded-pill">
-                      {orden.cantidadItems} prod.
+                      {ord.items?.length || 0} Prod
                     </span>
                   </td>
-
-                  {/* TOTAL */}
-                  <td className="text-end fw-bold text-success fs-6">
-                    ${orden.total?.toLocaleString()}
+                  <td className="fw-bold text-success">
+                    ${ord.total?.toLocaleString()}
                   </td>
-
-                  {/* ESTADO (Simulado como Pagado) */}
-                  <td className="text-center">
-                    <span className="badge bg-success text-white">
-                      <i className="bx bx-check-circle"></i> PAGADO
+                  <td className="text-end pe-4">
+                    <span className="badge bg-success-subtle text-success-emphasis border border-success-subtle rounded-pill">
+                      Completado
                     </span>
                   </td>
                 </tr>
               ))}
-
-              {ordenes.length === 0 && (
-                <tr>
-                  <td colSpan="6" className="text-center py-5">
-                    <div className="text-muted">
-                      <i className="bx bx-ghost fs-1 mb-3"></i>
-                      <p className="mb-0">No se han registrado boletas aún.</p>
-                    </div>
-                  </td>
-                </tr>
-              )}
             </tbody>
           </table>
         </div>
@@ -96,5 +53,4 @@ const OrdersView = ({ ordenes }) => {
     </div>
   );
 };
-
 export default OrdersView;

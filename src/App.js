@@ -8,6 +8,7 @@ import "./App.css";
 import ProtectedRoute from "./components/ProtectedRoute";
 import Navbar from "./components/Navbar";
 import Footer from "./components/Footer";
+import ProductoDetalle from "./pages/ProductoDetalle";
 
 // Páginas
 import Home from "./pages/Home";
@@ -77,6 +78,7 @@ function App() {
             <Route path="/nosotros" element={<Nosotros />} />
             <Route path="/register" element={<Registro />} />
             <Route path="/blog" element={<Blog />} />
+            <Route path="/producto/:id" element={<ProductoDetalle />} />
 
             {/* CORRECCIÓN CRÍTICA: La prop debe llamarse 'onLogin' */}
             <Route path="/login" element={<Login onLogin={handleLogin} />} />

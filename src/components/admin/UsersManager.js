@@ -2,75 +2,49 @@ import React from "react";
 
 const UsersManager = ({ usuarios, onDeleteUser }) => {
   return (
-    <div className="card border-0 shadow-lg rounded-4 animate__animated animate__fadeIn">
+    <div className="card border-0 shadow-lg bg-body-tertiary rounded-4 animate__animated animate__fadeIn">
       <div className="card-header bg-transparent border-0 pt-4 ps-4">
-        <h4 className="fw-bold">
-          <i className="bx bx-user-circle text-primary"></i> Gestión de Usuarios
-        </h4>
+        <h5 className="fw-bold text-primary">
+          <i className="bx bx-user-circle"></i> Gestión de Usuarios
+        </h5>
       </div>
-      <div className="card-body">
+      <div className="card-body p-0">
         <div className="table-responsive">
-          <table className="table table-hover align-middle">
-            <thead className="table-light">
+          <table className="table table-hover align-middle mb-0">
+            <thead className="bg-body-secondary">
               <tr>
-                <th>ID</th>
-                <th>Usuario / Email</th>
+                <th className="ps-4">ID</th>
+                <th>Usuario</th>
+                <th>Email</th>
                 <th>Rol</th>
-                <th className="text-end">Acciones</th>
+                <th className="text-end pe-4">Acciones</th>
               </tr>
             </thead>
             <tbody>
               {usuarios.map((u) => (
                 <tr key={u.id}>
+                  <td className="ps-4">#{u.id}</td>
+                  <td className="fw-bold text-body">{u.username}</td>
+                  <td className="text-muted">{u.email}</td>
                   <td>
-                    <small className="text-muted">#{u.id}</small>
-                  </td>
-                  <td>
-                    <div className="d-flex align-items-center">
-                      <div className="bg-primary bg-opacity-10 rounded-circle p-2 me-2 text-primary">
-                        <i className="bx bx-user"></i>
-                      </div>
-                      <div>
-                        {/* Intenta mostrar username, si no existe muestra email */}
-                        <span className="fw-bold d-block">
-                          {u.username || u.nombre}
-                        </span>
-                        <small className="text-muted">{u.email}</small>
-                      </div>
-                    </div>
-                  </td>
-                  <td>
-                    {/* Detecta rol o role */}
                     <span
                       className={`badge rounded-pill ${
-                        u.rol === "ADMIN" || u.role === "ADMIN"
-                          ? "bg-danger bg-opacity-75"
-                          : "bg-info bg-opacity-75 text-dark"
+                        u.rol === "ADMIN" ? "bg-danger" : "bg-primary"
                       }`}
                     >
-                      {(u.rol || u.role || "USER").toUpperCase()}
+                      {u.rol}
                     </span>
                   </td>
-                  <td className="text-end">
+                  <td className="text-end pe-4">
                     <button
-                      className="btn btn-sm btn-outline-danger border-0 rounded-circle p-2 hover-scale"
+                      className="btn btn-sm btn-outline-danger border-0"
                       onClick={() => onDeleteUser(u.id)}
-                      title="Eliminar usuario"
                     >
                       <i className="bx bx-trash fs-5"></i>
                     </button>
                   </td>
                 </tr>
               ))}
-
-              {usuarios.length === 0 && (
-                <tr>
-                  <td colSpan="4" className="text-center py-5 text-muted">
-                    <i className="bx bx-ghost fs-1 mb-2"></i>
-                    <p>No se encontraron usuarios en la base de datos.</p>
-                  </td>
-                </tr>
-              )}
             </tbody>
           </table>
         </div>
@@ -78,5 +52,4 @@ const UsersManager = ({ usuarios, onDeleteUser }) => {
     </div>
   );
 };
-
 export default UsersManager;
