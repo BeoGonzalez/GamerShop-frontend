@@ -74,7 +74,7 @@ function Registro() {
                 className="form-control rounded-3" // Eliminado ps-5
                 id="floatingUser"
                 name="username"
-                placeholder="Usuario"
+                placeholder=""
                 onChange={handleChange}
                 required
               />
@@ -89,7 +89,7 @@ function Registro() {
                 className="form-control rounded-3" // Eliminado ps-5
                 id="floatingEmail"
                 name="email"
-                placeholder="name@example.com"
+                placeholder=""
                 onChange={handleChange}
                 required
               />
@@ -104,7 +104,7 @@ function Registro() {
                 className="form-control rounded-3" // Eliminado ps-5
                 id="floatingPass"
                 name="password"
-                placeholder="Contraseña"
+                placeholder=""
                 onChange={handleChange}
                 required
               />

@@ -105,7 +105,7 @@ function Login({ onLogin }) {
                 type="email"
                 className="form-control rounded-3"
                 id="floatingInput"
-                placeholder="name@example.com"
+                placeholder=""
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 required
@@ -118,7 +118,7 @@ function Login({ onLogin }) {
                 type="password"
                 className="form-control rounded-3"
                 id="floatingPassword"
-                placeholder="Password"
+                placeholder=""
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 required
