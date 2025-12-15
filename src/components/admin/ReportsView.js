@@ -17,13 +17,21 @@ import {
   ResponsiveContainer,
 } from "recharts";
 
-const ReportsView = ({ productos, ordenes, categorias }) => {
+const ReportsView = ({ productos, ordenes, categorias, darkMode }) => {
+  // Colores dinámicos para Modo Oscuro
+  const axisColor = darkMode ? "#e9ecef" : "#495057";
+  const gridColor = darkMode ? "#495057" : "#dee2e6";
+  const tooltipBg = darkMode ? "#212529" : "#ffffff";
+  const tooltipText = darkMode ? "#ffffff" : "#000000";
+
+  // 1. Datos para Gráfico Circular (Pie)
   const dataPie = categorias
     .map((cat) => ({
       name: cat.nombre,
       value: productos.filter((p) => p.categoria?.id === cat.id).length,
     }))
     .filter((item) => item.value > 0);
+
   const COLORES_PIE = [
     "#0088FE",
     "#00C49F",
@@ -33,6 +41,7 @@ const ReportsView = ({ productos, ordenes, categorias }) => {
     "#82ca9d",
   ];
 
+  // 2. Datos para Gráfico de Barras (Stock)
   const dataBar = [...productos]
     .sort((a, b) => b.stock - a.stock)
     .slice(0, 5)
@@ -41,24 +50,35 @@ const ReportsView = ({ productos, ordenes, categorias }) => {
       stock: p.stock,
     }));
 
+  // 3. Datos para Gráfico de Líneas (Ventas individuales)
   const dataLine = ordenes.map((o, index) => ({
-    name: `Ord #${index + 1}`,
+    name: `Ord #${index + 1}`, // Usamos índice simple para el eje X
     monto: o.total,
   }));
 
+  // 4. Datos para Gráfico de Área (Ingreso Acumulado)
   let acumulado = 0;
   const dataArea = ordenes.map((o, index) => {
     acumulado += o.total;
     return { name: `Venta ${index + 1}`, ingreso: acumulado };
   });
 
-  const cardStyle =
-    "card border-0 shadow-lg h-100 bg-body-tertiary rounded-4 overflow-hidden";
-  const containerH = { width: "100%", height: 300 };
+  const cardStyle = "card border-0 shadow-lg h-100 rounded-4 overflow-hidden";
+  // minWidth: 0 evita el error de Recharts en contenedores flexibles
+  const containerH = { width: "100%", height: 300, minWidth: 0 };
+
   const CustomTooltip = ({ active, payload, label }) => {
     if (active && payload && payload.length)
       return (
-        <div className="bg-dark text-white p-2 rounded shadow border border-secondary">
+        <div
+          style={{
+            backgroundColor: tooltipBg,
+            color: tooltipText,
+            padding: "10px",
+            borderRadius: "8px",
+            border: `1px solid ${gridColor}`,
+          }}
+        >
           <p className="mb-0 fw-bold">{label}</p>
           <p className="mb-0">{`${payload[0].name || ""}: ${
             payload[0].value
@@ -73,11 +93,13 @@ const ReportsView = ({ productos, ordenes, categorias }) => {
       <h3 className="fw-bold mb-4 text-body">
         <i className="bx bx-pie-chart-alt-2"></i> Reportes de la Tienda
       </h3>
+
       <div className="row g-4">
+        {/* GRÁFICO 1: PIE - Categorías */}
         <div className="col-md-6">
           <div className={cardStyle}>
             <div className="card-header bg-transparent border-0 pt-4 text-center">
-              <h5 className="fw-bold text-primary">Por Categorías</h5>
+              <h5 className="fw-bold text-primary">Inventario por Categoría</h5>
             </div>
             <div className="card-body">
               <div style={containerH}>
@@ -109,6 +131,8 @@ const ReportsView = ({ productos, ordenes, categorias }) => {
             </div>
           </div>
         </div>
+
+        {/* GRÁFICO 2: BARRAS - Stock */}
         <div className="col-md-6">
           <div className={cardStyle}>
             <div className="card-header bg-transparent border-0 pt-4 text-center">
@@ -118,13 +142,17 @@ const ReportsView = ({ productos, ordenes, categorias }) => {
               <div style={containerH}>
                 <ResponsiveContainer>
                   <BarChart data={dataBar}>
-                    <CartesianGrid strokeDasharray="3 3" opacity={0.3} />
+                    <CartesianGrid
+                      strokeDasharray="3 3"
+                      stroke={gridColor}
+                      opacity={0.3}
+                    />
                     <XAxis
                       dataKey="name"
-                      stroke="#8884d8"
+                      stroke={axisColor}
                       style={{ fontSize: "0.8rem" }}
                     />
-                    <YAxis stroke="#8884d8" />
+                    <YAxis stroke={axisColor} />
                     <Tooltip
                       content={<CustomTooltip />}
                       cursor={{ fill: "transparent" }}
@@ -143,6 +171,8 @@ const ReportsView = ({ productos, ordenes, categorias }) => {
             </div>
           </div>
         </div>
+
+        {/* GRÁFICO 3: LÍNEAS - Ventas (Este faltaba) */}
         <div className="col-md-6">
           <div className={cardStyle}>
             <div className="card-header bg-transparent border-0 pt-4 text-center">
@@ -152,9 +182,13 @@ const ReportsView = ({ productos, ordenes, categorias }) => {
               <div style={containerH}>
                 <ResponsiveContainer>
                   <LineChart data={dataLine}>
-                    <CartesianGrid strokeDasharray="3 3" opacity={0.2} />
+                    <CartesianGrid
+                      strokeDasharray="3 3"
+                      stroke={gridColor}
+                      opacity={0.3}
+                    />
                     <XAxis dataKey="name" hide />
-                    <YAxis stroke="#8884d8" />
+                    <YAxis stroke={axisColor} />
                     <Tooltip content={<CustomTooltip />} />
                     <Legend />
                     <Line
@@ -170,6 +204,8 @@ const ReportsView = ({ productos, ordenes, categorias }) => {
             </div>
           </div>
         </div>
+
+        {/* GRÁFICO 4: ÁREA - Ingresos (Este faltaba) */}
         <div className="col-md-6">
           <div className={cardStyle}>
             <div className="card-header bg-transparent border-0 pt-4 text-center">
@@ -199,9 +235,13 @@ const ReportsView = ({ productos, ordenes, categorias }) => {
                         />
                       </linearGradient>
                     </defs>
-                    <CartesianGrid strokeDasharray="3 3" opacity={0.2} />
+                    <CartesianGrid
+                      strokeDasharray="3 3"
+                      stroke={gridColor}
+                      opacity={0.3}
+                    />
                     <XAxis dataKey="name" hide />
-                    <YAxis stroke="#8884d8" />
+                    <YAxis stroke={axisColor} />
                     <Tooltip content={<CustomTooltip />} />
                     <Area
                       type="monotone"

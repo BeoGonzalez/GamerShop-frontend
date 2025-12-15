@@ -1,399 +1,320 @@
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
+import axios from "axios";
 
-// URL base del backend
 const API_URL = "https://gamershop-backend-1.onrender.com";
 
 function Carrito() {
-  const navigate = useNavigate();
-
-  // 1. Datos de Sesión
-  const username = localStorage.getItem("username");
-  const token = localStorage.getItem("jwt_token");
-  const isAuth = !!token && !!username;
-
-  // Clave dinámica para leer el carrito de ESTE usuario
-  const storageKey = isAuth ? `carrito_${username}` : null;
-
-  // 2. Estados
-  const [carrito, setCarrito] = useState(() => {
-    if (!storageKey) return [];
-    const saved = localStorage.getItem(storageKey);
-    try {
-      return saved ? JSON.parse(saved) : [];
-    } catch (e) {
-      return [];
-    }
-  });
-
-  const [productosStock, setProductosStock] = useState([]);
+  const [carrito, setCarrito] = useState([]);
   const [total, setTotal] = useState(0);
-  const [boleta, setBoleta] = useState(null);
   const [procesando, setProcesando] = useState(false);
 
-  // 3. Efectos
+  // ESTADO PARA LA BOLETA (Si tiene datos, mostramos la boleta en vez del carrito)
+  const [boleta, setBoleta] = useState(null);
 
-  // Cargar stock real del backend
-  const fetchStock = useCallback(async () => {
-    try {
-      const response = await fetch(`${API_URL}/productos`);
-      if (response.ok) {
-        const data = await response.json();
-        setProductosStock(data);
-      }
-    } catch (error) {
-      console.error("Error al sincronizar stock:", error);
+  const navigate = useNavigate();
+
+  // 1. Cargar carrito del LocalStorage
+  useEffect(() => {
+    const usuarioActual = localStorage.getItem("username");
+    if (usuarioActual) {
+      const key = `carrito_${usuarioActual}`;
+      const items = JSON.parse(localStorage.getItem(key)) || [];
+      setCarrito(items);
+      calcularTotal(items);
     }
   }, []);
 
-  useEffect(() => {
-    fetchStock();
-  }, [fetchStock]);
-
-  // Calcular Total, Guardar cambios locales y Notificar Navbar
-  useEffect(() => {
-    const nuevoTotal = carrito.reduce((acc, item) => {
-      const cantidad = item.cantidad || 1;
-      return acc + item.precio * cantidad;
-    }, 0);
-    setTotal(nuevoTotal);
-
-    if (storageKey) {
-      localStorage.setItem(storageKey, JSON.stringify(carrito));
-      // 📢 AVISAR AL NAVBAR CADA VEZ QUE CAMBIE EL CARRITO
-      window.dispatchEvent(new Event("cartUpdated"));
-    }
-  }, [carrito, storageKey]);
-
-  // --- ACCIONES ---
-
-  const eliminarProducto = (id) => {
-    if (
-      window.confirm("¿Estás seguro de eliminar este producto del carrito?")
-    ) {
-      const nuevoCarrito = carrito.filter((item) => item.id !== id);
-      setCarrito(nuevoCarrito);
-    }
-  };
-
-  const updateQuantity = (id, amount) => {
-    setCarrito((prev) =>
-      prev.map((item) => {
-        if (item.id === id) {
-          const prodReal = productosStock.find((p) => p.id === id);
-          const maxStock = prodReal ? prodReal.stock : 999;
-          const newQty = (item.cantidad || 1) + amount;
-
-          if (newQty < 1) return item;
-          if (newQty > maxStock) {
-            alert(`⚠️ ¡Stock insuficiente! Solo quedan ${maxStock} unidades.`);
-            return item;
-          }
-          return { ...item, cantidad: newQty };
-        }
-        return item;
-      })
+  const calcularTotal = (items) => {
+    const suma = items.reduce(
+      (acc, item) => acc + item.precio * item.cantidad,
+      0
     );
+    setTotal(suma);
   };
 
-  // --- PROCESAR COMPRA ---
-  const procesarCompra = async () => {
-    if (carrito.length === 0) return;
+  // 2. ELIMINAR ITEM
+  const eliminarItem = (id) => {
+    const usuarioActual = localStorage.getItem("username");
+    const key = `carrito_${usuarioActual}`;
+
+    const nuevoCarrito = carrito.filter((item) => item.id !== id);
+    setCarrito(nuevoCarrito);
+    calcularTotal(nuevoCarrito);
+
+    localStorage.setItem(key, JSON.stringify(nuevoCarrito));
+    window.dispatchEvent(new Event("storage")); // Actualizar Navbar
+  };
+
+  // 3. PROCESAR COMPRA (CONECTADO A ORDEN CONTROLLER)
+  const handleComprar = async () => {
+    const username = localStorage.getItem("username");
+    const token = localStorage.getItem("jwt_token"); // Token correcto
+
+    if (!username || !token) {
+      alert("🔒 Debes iniciar sesión para comprar.");
+      navigate("/login");
+      return;
+    }
+
+    if (carrito.length === 0) return alert("El carrito está vacío.");
+
     setProcesando(true);
 
-    try {
-      const ordenData = {
-        username: username,
-        items: carrito.map((item) => ({
-          id: item.id,
-          cantidad: item.cantidad || 1,
-        })),
-      };
+    // --- PREPARAR DATOS PARA EL BACKEND ---
+    // Mapeamos para que coincida con CompraRequest.java: { id, cantidad }
+    const itemsParaBackend = carrito.map((prod) => ({
+      id: prod.id,
+      cantidad: prod.cantidad,
+    }));
 
-      const response = await fetch(`${API_URL}/ordenes/comprar`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify(ordenData),
+    const payload = {
+      username: username,
+      items: itemsParaBackend,
+    };
+
+    try {
+      console.log("📤 Enviando orden:", payload);
+
+      // Enviamos el POST
+      const response = await axios.post(`${API_URL}/ordenes`, payload, {
+        headers: { Authorization: `Bearer ${token}` },
       });
 
-      if (!response.ok) {
-        const errorText = await response.text();
-        throw new Error(errorText);
-      }
+      // --- ÉXITO: GENERAR BOLETA VISUAL ---
+      // El backend devuelve: { "mensaje": "Orden registrada", "id": 123 }
 
-      const nuevaBoleta = {
-        idOrden: Math.floor(Math.random() * 900000) + 100000,
-        fecha: new Date().toLocaleDateString(),
-        hora: new Date().toLocaleTimeString(),
+      const datosDeBoleta = {
+        nroOrden: response.data.id,
+        fecha: new Date().toLocaleString(),
         cliente: username,
-        items: [...carrito],
+        items: [...carrito], // Guardamos copia de los items para mostrar
         totalPagado: total,
       };
 
-      setBoleta(nuevaBoleta);
-      setCarrito([]); // Al vaciar el carrito, el useEffect disparará 'cartUpdated' y el contador será 0
+      // 1. Guardamos la boleta en el estado para mostrarla
+      setBoleta(datosDeBoleta);
 
-      fetchStock();
+      // 2. Limpiamos el carrito del sistema
+      localStorage.removeItem(`carrito_${username}`);
+      setCarrito([]);
+      setTotal(0);
+      window.dispatchEvent(new Event("storage"));
+
+      // NO navegamos a ningún lado, dejamos que el return renderice la boleta
     } catch (error) {
-      console.error("Error en compra:", error);
-      alert("❌ No se pudo completar la compra:\n" + error.message);
+      console.error("Error compra:", error);
+      const msg = error.response?.data || "Error al procesar la compra.";
+      // Si el error es un objeto, lo convertimos a texto
+      alert(`❌ ${typeof msg === "object" ? JSON.stringify(msg) : msg}`);
     } finally {
       setProcesando(false);
     }
   };
 
+  // Función para salir de la boleta
   const cerrarBoleta = () => {
-    setBoleta(null);
-    navigate("/");
+    navigate("/"); // Volver al inicio
   };
 
-  // --- RENDERIZADO ---
-
-  if (!isAuth) {
+  if (!localStorage.getItem("username")) {
     return (
-      <div className="container py-5 text-center mt-5">
-        <div className="card shadow p-5 mx-auto" style={{ maxWidth: "500px" }}>
-          <h2>🔒 Acceso Restringido</h2>
-          <p className="text-muted">
-            Debes iniciar sesión para ver tu carrito.
-          </p>
-          <Link to="/login" className="btn btn-primary fw-bold">
-            Ir al Login
-          </Link>
+      <div className="container py-5 text-center">
+        <h3>Inicia sesión para ver tu carrito</h3>
+        <Link to="/login" className="btn btn-primary mt-3">
+          Ir al Login
+        </Link>
+      </div>
+    );
+  }
+
+  // =========================================================
+  // RENDERIZADO CONDICIONAL: ¿MOSTRAMOS BOLETA O CARRITO?
+  // =========================================================
+
+  if (boleta) {
+    //
+    return (
+      <div className="container py-5 animate__animated animate__zoomIn">
+        <div className="d-flex justify-content-center">
+          <div
+            className="card shadow-lg border-0 rounded-4"
+            style={{
+              maxWidth: "500px",
+              width: "100%",
+              backgroundColor: "#fffdf8",
+            }}
+          >
+            {/* Encabezado Verde */}
+            <div className="bg-success text-white text-center py-4 rounded-top-4">
+              <i
+                className="bx bx-check-circle"
+                style={{ fontSize: "5rem" }}
+              ></i>
+              <h2 className="fw-bold mt-2">¡Pago Exitoso!</h2>
+              <p className="mb-0 opacity-75">Tu orden ha sido registrada</p>
+            </div>
+
+            <div className="card-body p-4">
+              <div className="text-center mb-4">
+                <h5 className="fw-bold text-dark letter-spacing-1">
+                  BOLETA DE VENTA
+                </h5>
+                <p className="text-muted small mb-0">
+                  Orden #{boleta.nroOrden}
+                </p>
+                <p className="text-muted small">{boleta.fecha}</p>
+              </div>
+
+              <hr
+                className="border-secondary opacity-25 border-dashed"
+                style={{ borderStyle: "dashed" }}
+              />
+
+              {/* Lista de Items */}
+              <div className="mb-4">
+                {boleta.items.map((item, index) => (
+                  <div
+                    key={index}
+                    className="d-flex justify-content-between mb-2 small"
+                  >
+                    <div>
+                      <span className="fw-bold text-dark">{item.nombre}</span>{" "}
+                      <br />
+                      <span className="text-muted">x{item.cantidad}</span>
+                      {/* Si tiene variante de color, la mostramos */}
+                      {item.selectedColor && (
+                        <span className="text-muted ms-1">
+                          ({item.selectedColor})
+                        </span>
+                      )}
+                    </div>
+                    <span className="fw-bold">
+                      ${(item.precio * item.cantidad).toLocaleString()}
+                    </span>
+                  </div>
+                ))}
+              </div>
+
+              <hr className="border-secondary opacity-25" />
+
+              {/* Total */}
+              <div className="d-flex justify-content-between align-items-center bg-light p-3 rounded mb-4">
+                <span className="fs-5 text-muted">TOTAL</span>
+                <span className="fs-3 fw-bold text-success">
+                  ${boleta.totalPagado.toLocaleString()}
+                </span>
+              </div>
+
+              {/* Botón Volver */}
+              <button
+                onClick={cerrarBoleta}
+                className="btn btn-dark w-100 py-3 fw-bold rounded-pill shadow-sm"
+              >
+                VOLVER A LA TIENDA
+              </button>
+            </div>
+          </div>
         </div>
       </div>
     );
   }
 
+  // --- SI NO HAY BOLETA, MOSTRAMOS EL CARRITO NORMAL ---
   return (
-    <div className="container py-5 mt-5 position-relative">
-      <h2 className="mb-4 border-bottom pb-3">
-        🛒 Carrito de{" "}
-        <span className="text-primary text-capitalize">{username}</span>
-      </h2>
+    <div className="container py-5 animate__animated animate__fadeIn">
+      <h2 className="fw-bold mb-4">🛒 Tu Carrito de Compras</h2>
 
-      <div className="row g-5">
-        <div className="col-lg-8">
-          {carrito.length === 0 ? (
-            <div className="alert alert-secondary text-center py-5">
-              <h4>Tu carrito está vacío 😢</h4>
-              <p>¡Ve a la tienda y agrega algunos juegos!</p>
-              <Link to="/" className="btn btn-outline-primary mt-3">
-                Ir a Comprar
-              </Link>
-            </div>
-          ) : (
-            <div className="d-flex flex-column gap-3">
-              {carrito.map((item) => (
-                <div key={item.id} className="card shadow-sm border">
-                  <div className="card-body d-flex align-items-center flex-wrap gap-3">
-                    <div
-                      className="bg-body-secondary rounded d-flex align-items-center justify-content-center"
+      {carrito.length === 0 ? (
+        <div className="alert alert-warning text-center p-5 rounded-4">
+          <h4>Tu carrito está vacío</h4>
+          <Link to="/" className="btn btn-dark mt-3 rounded-pill">
+            Volver al Catálogo
+          </Link>
+        </div>
+      ) : (
+        <div className="row g-4">
+          {/* LISTA DE ITEMS */}
+          <div className="col-lg-8">
+            <div className="card border-0 shadow-sm rounded-4">
+              <div className="card-body p-0">
+                {carrito.map((item) => (
+                  <div
+                    key={item.id}
+                    className="d-flex align-items-center p-3 border-bottom"
+                  >
+                    <img
+                      src={item.imagen}
+                      alt={item.nombre}
                       style={{
                         width: "80px",
                         height: "80px",
-                        overflow: "hidden",
+                        objectFit: "cover",
                       }}
-                    >
-                      {item.imagen ? (
-                        <img
-                          src={item.imagen}
-                          alt={item.nombre}
-                          style={{
-                            width: "100%",
-                            height: "100%",
-                            objectFit: "contain", // IMAGEN COMPLETA
-                            padding: "5px",
-                          }}
-                        />
-                      ) : (
-                        <span style={{ fontSize: "2rem" }}>🎮</span>
+                      className="rounded me-3"
+                    />
+                    <div className="flex-grow-1">
+                      <h5 className="mb-1 fw-bold">{item.nombre}</h5>
+                      <p className="text-muted mb-0 small">
+                        Precio: ${item.precio.toLocaleString()}
+                      </p>
+                      {item.selectedColor && (
+                        <span className="badge bg-secondary">
+                          {item.selectedColor}
+                        </span>
                       )}
                     </div>
-
-                    <div className="flex-grow-1">
-                      <div className="d-flex justify-content-between align-items-start mb-1">
-                        <h5
-                          className="mb-0 text-primary text-truncate"
-                          title={item.nombre}
-                          style={{ maxWidth: "250px" }}
-                        >
-                          {item.nombre}
-                        </h5>
-                        <button
-                          onClick={() => eliminarProducto(item.id)}
-                          className="btn btn-sm btn-outline-danger border-0 py-0"
-                          title="Eliminar del carrito"
-                        >
-                          ❌ Eliminar
-                        </button>
-                      </div>
-                      <small className="text-muted d-block">
-                        {item.categoria?.nombre || item.categoria || "General"}
-                      </small>
-                      <div className="fw-bold mt-1">
-                        ${item.precio.toLocaleString()}{" "}
-                        <span className="text-muted small fw-normal">
-                          unidad
-                        </span>
-                      </div>
-                    </div>
-
-                    <div className="d-flex align-items-center border rounded px-2">
-                      <button
-                        className="btn btn-sm btn-link text-decoration-none text-body"
-                        onClick={() => updateQuantity(item.id, -1)}
-                      >
-                        -
-                      </button>
-                      <span
-                        className="mx-3 fw-bold"
-                        style={{ minWidth: "20px", textAlign: "center" }}
-                      >
-                        {item.cantidad || 1}
+                    <div className="text-end">
+                      <span className="badge bg-light text-dark border mb-2 d-block">
+                        Cant: {item.cantidad}
                       </span>
                       <button
-                        className="btn btn-sm btn-link text-decoration-none text-body"
-                        onClick={() => updateQuantity(item.id, 1)}
+                        onClick={() => eliminarItem(item.id)}
+                        className="btn btn-sm btn-outline-danger border-0"
                       >
-                        +
+                        <i className="bx bx-trash fs-5"></i>
                       </button>
-                    </div>
-
-                    <div
-                      className="text-end ms-auto"
-                      style={{ minWidth: "90px" }}
-                    >
-                      <small className="d-block text-muted">Subtotal</small>
-                      <span className="fw-bold fs-5 text-success">
-                        ${(item.precio * (item.cantidad || 1)).toLocaleString()}
-                      </span>
                     </div>
                   </div>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-
-        {carrito.length > 0 && (
-          <div className="col-lg-4">
-            <div className="card shadow-sm sticky-top" style={{ top: "100px" }}>
-              <div className="card-header bg-body-tertiary">
-                <h5 className="m-0">Resumen de Compra</h5>
-              </div>
-              <div className="card-body">
-                <div className="d-flex justify-content-between mb-2 text-muted">
-                  <span>Productos</span>
-                  <span>
-                    {carrito.reduce((acc, i) => acc + (i.cantidad || 1), 0)} u.
-                  </span>
-                </div>
-                <div className="d-flex justify-content-between mb-3 text-muted">
-                  <span>Envío</span>
-                  <span className="text-success">Gratis</span>
-                </div>
-                <hr />
-                <div className="d-flex justify-content-between mb-4 align-items-center">
-                  <span className="fs-5">TOTAL A PAGAR</span>
-                  <span className="fs-3 fw-bold text-primary">
-                    ${total.toLocaleString()}
-                  </span>
-                </div>
-
-                <button
-                  onClick={procesarCompra}
-                  disabled={procesando}
-                  className="btn btn-success w-100 py-3 fw-bold shadow-lg"
-                >
-                  {procesando ? (
-                    <>
-                      <span className="spinner-border spinner-border-sm me-2"></span>
-                      Procesando...
-                    </>
-                  ) : (
-                    "PAGAR AHORA 💳"
-                  )}
-                </button>
+                ))}
               </div>
             </div>
           </div>
-        )}
-      </div>
 
-      {boleta && (
-        <div
-          className="position-fixed top-0 start-0 w-100 h-100 d-flex justify-content-center align-items-center"
-          style={{
-            backgroundColor: "rgba(0,0,0,0.8)",
-            zIndex: 9999,
-            backdropFilter: "blur(4px)",
-          }}
-        >
-          <div
-            className="card shadow-lg p-0"
-            style={{
-              maxWidth: "400px",
-              width: "90%",
-              fontFamily: "'Courier New', monospace",
-            }}
-          >
-            <div className="card-header bg-success text-white text-center py-3">
-              <h4 className="m-0">✅ PAGO EXITOSO</h4>
-              <small>GamerShop Inc.</small>
-            </div>
+          {/* RESUMEN DE PAGO */}
+          <div className="col-lg-4">
+            <div className="card border-0 shadow-lg rounded-4 bg-primary text-white">
+              <div className="card-body p-4">
+                <h4 className="fw-bold mb-4">Resumen</h4>
+                <div className="d-flex justify-content-between mb-2">
+                  <span>Subtotal</span>
+                  <span>${total.toLocaleString()}</span>
+                </div>
+                <div className="d-flex justify-content-between mb-4">
+                  <span>Envío</span>
+                  <span>Gratis</span>
+                </div>
+                <hr className="opacity-50" />
+                <div className="d-flex justify-content-between fs-4 fw-bold mb-4">
+                  <span>Total</span>
+                  <span>${total.toLocaleString()}</span>
+                </div>
 
-            <div className="card-body p-4 bg-body">
-              <div className="text-center border-bottom pb-3 mb-3 border-2">
-                <p className="mb-1 fw-bold">ORDEN #{boleta.idOrden}</p>
-                <p className="mb-1">
-                  {boleta.fecha} - {boleta.hora}
-                </p>
-                <p className="mb-0">
-                  Cliente: <strong>{boleta.cliente}</strong>
-                </p>
+                <button
+                  onClick={handleComprar}
+                  className="btn btn-light w-100 py-3 fw-bold rounded-pill text-primary shadow"
+                  disabled={procesando}
+                >
+                  {procesando ? (
+                    <span>
+                      <span className="spinner-border spinner-border-sm me-2"></span>
+                      Procesando...
+                    </span>
+                  ) : (
+                    "CONFIRMAR COMPRA"
+                  )}
+                </button>
               </div>
-
-              <div className="mb-3">
-                <p className="small text-muted mb-2 border-bottom pb-1">
-                  DETALLE:
-                </p>
-                <ul className="list-unstyled mb-0">
-                  {boleta.items.map((item, idx) => (
-                    <li
-                      key={idx}
-                      className="d-flex justify-content-between small mb-1"
-                    >
-                      <span>
-                        {item.cantidad} x {item.nombre}
-                      </span>
-                      <span>
-                        ${(item.precio * item.cantidad).toLocaleString()}
-                      </span>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-
-              <div className="d-flex justify-content-between border-top pt-3 mt-2 fw-bold fs-5">
-                <span>TOTAL</span>
-                <span>${boleta.totalPagado.toLocaleString()}</span>
-              </div>
-            </div>
-
-            <div className="card-footer bg-body border-0 text-center pb-4">
-              <p className="small text-muted mb-3">
-                Tu inventario ha sido actualizado.
-              </p>
-              <button
-                onClick={cerrarBoleta}
-                className="btn btn-dark w-100 fw-bold"
-              >
-                CERRAR Y SEGUIR COMPRANDO
-              </button>
             </div>
           </div>
         </div>

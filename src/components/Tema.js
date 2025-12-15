@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 
 const Tema = () => {
-  // Estado inicial
+  // 1. Estado inicial inteligente (Lee localStorage o Preferencia de Sistema)
   const [tema, setTema] = useState(() => {
     const guardado = localStorage.getItem("tema");
     if (guardado) return guardado;
@@ -10,25 +10,21 @@ const Tema = () => {
       : "light";
   });
 
-  // Estado para controlar la animación al hacer clic
   const [isAnimating, setIsAnimating] = useState(false);
 
+  // 2. EFECTO: Aplica el tema al HTML (Global)
   useEffect(() => {
     document.documentElement.setAttribute("data-bs-theme", tema);
     localStorage.setItem("tema", tema);
+
+    // Disparamos un evento personalizado para que AdminPanel se entere inmediatamente
+    window.dispatchEvent(new Event("themeChange"));
   }, [tema]);
 
   const toggleTema = () => {
-    // 1. Activar animación
     setIsAnimating(true);
-
-    // 2. Cambiar tema
     setTema((prev) => (prev === "dark" ? "light" : "dark"));
-
-    // 3. Desactivar animación después de que termine (500ms)
-    setTimeout(() => {
-      setIsAnimating(false);
-    }, 500);
+    setTimeout(() => setIsAnimating(false), 500);
   };
 
   return (
@@ -54,16 +50,14 @@ const Tema = () => {
         style={{
           width: "38px",
           height: "38px",
-          // Color: Magenta en modo Light (Sol), Cyan en modo Dark (Luna)
-          color: tema === "light" ? "#ff00ff" : "#00aec3",
+          color: tema === "light" ? "#ff00ff" : "#00aec3", // Magenta (Sol) / Cyan (Luna)
+          transition: "color 0.3s ease",
         }}
         title={`Cambiar a modo ${tema === "dark" ? "claro" : "oscuro"}`}
       >
         {tema === "light" ? (
-          // Sol
           <i className="bx bx-sun fs-4"></i>
         ) : (
-          // Luna
           <i className="bx bx-moon fs-4"></i>
         )}
       </button>

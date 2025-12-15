@@ -1,149 +1,166 @@
 import React, { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
+import axios from "axios";
 
-function Login({ onLogin }) {
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [error, setError] = useState(null);
+const Login = ({ onLogin }) => {
   const navigate = useNavigate();
+
+  const [formData, setFormData] = useState({
+    username: "",
+    password: "",
+  });
+
+  const [error, setError] = useState(null);
+  const [loading, setLoading] = useState(false);
+
+  const handleChange = (e) => {
+    setFormData({
+      ...formData,
+      [e.target.name]: e.target.value,
+    });
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError(null);
-
-    console.log("🔍 TEST-LOG [1]: Submit iniciado. Email:", email);
+    setLoading(true);
 
     try {
-      // 1. Petición al Backend
-      const response = await fetch(
+      // Petición al Backend
+      const response = await axios.post(
         "https://gamershop-backend-1.onrender.com/auth/login",
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            email: email,
-            password: password,
-          }),
-        }
+        formData
       );
 
-      console.log("🔍 TEST-LOG [2]: Fetch respondió. Status:", response.status);
+      if (response.status === 200) {
+        const data = response.data;
 
-      if (!response.ok) {
-        throw new Error("Credenciales inválidas o error de servidor");
-      }
+        console.log("✅ Login exitoso. Rol:", data.rol);
 
-      const data = await response.json();
-      console.log("🔍 TEST-LOG [3]: Data recibida del JSON:", data);
+        // =======================================================
+        // 🔑 PARTE CRÍTICA: GUARDAR CON EL NOMBRE CORRECTO
+        // =======================================================
+        // Antes quizás decia "token", ahora DEBE decir "jwt_token"
+        // para que coincida con ProductsManager.js y los demás.
+        localStorage.setItem("jwt_token", data.token);
 
-      // 2. Guardar en LocalStorage
-      localStorage.setItem("jwt_token", data.token);
-      localStorage.setItem("username", data.username);
-      localStorage.setItem("rol", data.rol);
+        localStorage.setItem("rol", data.rol);
+        localStorage.setItem("username", data.username);
 
-      // 3. Verificar datos críticos antes de llamar a onLogin
-      // Aquí suele estar el error: ¿data.rol existe? ¿data.username existe?
-      console.log("🔍 TEST-LOG [4]: Validando datos...", {
-        rol: data.rol,
-        username: data.username,
-        propOnLogin: typeof onLogin,
-      });
+        // Actualizamos el estado de App.js
+        if (onLogin) {
+          onLogin(data);
+        }
 
-      // 4. Actualizar estado global
-      if (typeof onLogin === "function") {
-        console.log("🔍 TEST-LOG [5]: Llamando a onLogin()...");
-        onLogin(data.rol, data.username);
-      } else {
-        console.error(
-          "❌ TEST-LOG: ¡onLogin no es una función! Revisa App.js o el Test"
-        );
-      }
-
-      // 5. Redirección
-      setTimeout(() => {
+        // Redirección inteligente según el Rol
         if (data.rol === "ADMIN") {
           navigate("/admin");
         } else {
-          navigate("/");
+          navigate("/"); // O a /mis-compras
         }
-      }, 100);
+      }
     } catch (err) {
-      console.error("❌ TEST-LOG: ERROR CAPTURADO EN CATCH:", err);
-      setError("Correo o contraseña incorrectos.");
+      console.error("Error en login:", err);
+      if (err.response && err.response.status === 401) {
+        setError("❌ Usuario o contraseña incorrectos.");
+      } else {
+        setError("❌ Error de conexión con el servidor.");
+      }
+    } finally {
+      setLoading(false);
     }
   };
 
   return (
-    <div
-      className="container d-flex justify-content-center align-items-center"
-      style={{ minHeight: "80vh" }}
-    >
+    <div className="container d-flex justify-content-center align-items-center min-vh-100">
       <div
-        className="card shadow-lg border-0 rounded-4 overflow-hidden"
-        style={{ maxWidth: "400px", width: "100%" }}
+        className="card shadow-lg p-4 rounded-4"
+        style={{ width: "100%", maxWidth: "400px" }}
       >
-        <div className="card-header bg-primary text-white text-center py-4">
-          <i className="bx bx-user-circle" style={{ fontSize: "4rem" }}></i>
-          <h2 className="fw-bold mt-2">Bienvenido</h2>
-          <p className="mb-0 opacity-75">Inicia sesión para continuar</p>
+        <div className="text-center mb-4">
+          <i
+            className="bx bxs-user-circle text-primary"
+            style={{ fontSize: "4rem" }}
+          ></i>
+          <h3 className="fw-bold mt-2">Bienvenido</h3>
+          <p className="text-muted small">Ingresa a tu cuenta GamerShop</p>
         </div>
 
-        <div className="card-body p-4 bg-body-tertiary">
-          {error && (
-            <div
-              className="alert alert-danger d-flex align-items-center gap-2"
-              role="alert"
-            >
-              <i className="bx bx-error-circle fs-4"></i>
-              <div>{error}</div>
-            </div>
-          )}
+        {error && (
+          <div className="alert alert-danger text-center p-2 small animate__animated animate__shakeX">
+            {error}
+          </div>
+        )}
 
-          <form onSubmit={handleSubmit}>
-            <div className="form-floating mb-3">
+        <form onSubmit={handleSubmit}>
+          <div className="mb-3">
+            <label className="form-label fw-bold small">Usuario</label>
+            <div className="input-group">
+              <span className="input-group-text bg-light border-end-0">
+                <i className="bx bx-user"></i>
+              </span>
               <input
-                type="email"
-                className="form-control rounded-3"
-                id="floatingInput"
-                placeholder=""
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
+                type="text"
+                className="form-control border-start-0 ps-0"
+                name="username"
+                placeholder="Ej: admin1"
+                value={formData.username}
+                onChange={handleChange}
                 required
               />
-              <label htmlFor="floatingInput">Correo Electrónico</label>
             </div>
+          </div>
 
-            <div className="form-floating mb-4">
+          <div className="mb-4">
+            <label className="form-label fw-bold small">Contraseña</label>
+            <div className="input-group">
+              <span className="input-group-text bg-light border-end-0">
+                <i className="bx bx-lock-alt"></i>
+              </span>
               <input
                 type="password"
-                className="form-control rounded-3"
-                id="floatingPassword"
-                placeholder=""
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
+                className="form-control border-start-0 ps-0"
+                name="password"
+                placeholder="••••••"
+                value={formData.password}
+                onChange={handleChange}
                 required
               />
-              <label htmlFor="floatingPassword">Contraseña</label>
             </div>
+          </div>
 
-            <button
-              type="submit"
-              className="btn btn-primary w-100 py-3 fw-bold rounded-pill shadow-sm hover-scale"
-            >
-              INGRESAR <i className="bx bx-log-in-circle ms-1"></i>
-            </button>
-          </form>
-        </div>
+          <button
+            type="submit"
+            className="btn btn-primary w-100 fw-bold py-2 rounded-pill mb-3"
+            disabled={loading}
+          >
+            {loading ? (
+              <>
+                <span
+                  className="spinner-border spinner-border-sm me-2"
+                  role="status"
+                  aria-hidden="true"
+                ></span>
+                Ingresando...
+              </>
+            ) : (
+              "Iniciar Sesión"
+            )}
+          </button>
+        </form>
 
-        <div className="card-footer text-center py-3 bg-body border-0">
-          <small className="text-muted">¿No tienes cuenta? </small>
-          <Link to="/register" className="text-decoration-none fw-bold">
+        <div className="text-center mt-2">
+          <p className="small text-muted mb-0">¿No tienes cuenta?</p>
+          <Link
+            to="/register"
+            className="text-primary fw-bold text-decoration-none"
+          >
             Regístrate aquí
           </Link>
         </div>
       </div>
     </div>
   );
-}
+};
 
 export default Login;

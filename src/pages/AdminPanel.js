@@ -1,9 +1,10 @@
 import React, { useState, useEffect, useCallback } from "react";
 import axios from "axios";
-import ProductoForm from "../components/ProductoForm";
-import ProductoList from "../components/ProductoList";
+
+// --- COMPONENTES ---
 import DashboardOverview from "../components/admin/DashboardOverview";
 import ReportsView from "../components/admin/ReportsView";
+import ProductsManager from "../components/admin/ProductsManager";
 import UsersManager from "../components/admin/UsersManager";
 import CategoriesManager from "../components/admin/CategoriesManager";
 import OrdersView from "../components/admin/OrdersView";
@@ -15,31 +16,39 @@ function AdminPanel() {
   const [activeTab, setActiveTab] = useState("dashboard");
   const [showMobileSidebar, setShowMobileSidebar] = useState(false);
 
-  // --- LÓGICA MODO OSCURO ---
-  // 1. Leemos del localStorage o por defecto 'true' (Gamer style)
-  const [darkMode, setDarkMode] = useState(() => {
-    const saved = localStorage.getItem("admin_theme");
-    return saved ? JSON.parse(saved) : true;
-  });
+  // Detectar tema global
+  const [darkMode, setDarkMode] = useState(
+    document.documentElement.getAttribute("data-bs-theme") === "dark"
+  );
 
-  // 2. Función para cambiar
-  const toggleTheme = () => {
-    const newVal = !darkMode;
-    setDarkMode(newVal);
-    localStorage.setItem("admin_theme", JSON.stringify(newVal));
-  };
-  // ---------------------------
+  useEffect(() => {
+    const observer = new MutationObserver(() => {
+      setDarkMode(
+        document.documentElement.getAttribute("data-bs-theme") === "dark"
+      );
+    });
+    observer.observe(document.documentElement, {
+      attributes: true,
+      attributeFilter: ["data-bs-theme"],
+    });
+    return () => observer.disconnect();
+  }, []);
 
+  // --- DATOS ---
   const [data, setData] = useState({
     productos: [],
     categorias: [],
-    usuarios: [],
+    usuarios: [], // <--- Aquí se guardarán tus usuarios
     ordenes: [],
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
+  // =================================================================
+  // 1. CORRECCIÓN CRÍTICA: Nombre del Token
+  // =================================================================
   const getHeaders = () => {
+    // CAMBIO: Antes decia "token", ahora debe ser "jwt_token" para coincidir con Login.js
     const token = localStorage.getItem("jwt_token");
     return token ? { Authorization: `Bearer ${token}` } : null;
   };
@@ -48,28 +57,52 @@ function AdminPanel() {
     setLoading(true);
     setError(null);
     const headers = getHeaders();
-    if (!headers) {
-      window.location.href = "/login";
-      return;
-    }
+
+    console.log("🔄 Conectando a:", API_URL);
 
     try {
+      // Usamos allSettled para que si falla uno, no rompa todo el panel
       const [p, c, u, o] = await Promise.allSettled([
+        // Productos y Categorías (Públicos o sin header estricto en GET según tu config)
         axios.get(`${API_URL}/productos`),
         axios.get(`${API_URL}/categorias`),
-        axios.get(`${API_URL}/usuarios`, { headers }),
-        axios.get(`${API_URL}/ordenes`, { headers }),
+
+        // Usuarios (Requiere Auth sí o sí)
+        headers
+          ? axios.get(`${API_URL}/usuarios`, { headers })
+          : Promise.reject({ msg: "No hay sesión activa (Falta jwt_token)" }),
+
+        // Ordenes (Requiere Auth sí o sí)
+        headers
+          ? axios.get(`${API_URL}/ordenes`, { headers })
+          : Promise.reject({ msg: "No Auth" }),
       ]);
 
+      // DIAGNÓSTICO EN CONSOLA
+      if (u.status === "fulfilled") {
+        console.log("✅ Usuarios cargados:", u.value.data.length);
+      } else {
+        console.warn("⚠️ No se pudieron cargar usuarios:", u.reason);
+      }
+
+      // Guardamos lo que se pudo cargar
       setData({
         productos: p.status === "fulfilled" ? p.value.data : [],
         categorias: c.status === "fulfilled" ? c.value.data : [],
+        // Aquí asignamos la data de usuarios
         usuarios: u.status === "fulfilled" ? u.value.data : [],
         ordenes: o.status === "fulfilled" ? o.value.data : [],
       });
+
+      // Si falla productos, es un error de red grave
+      if (p.status === "rejected") {
+        throw new Error(
+          "No se pudo conectar con el Backend (¿Render está dormido?)"
+        );
+      }
     } catch (err) {
-      console.error(err);
-      setError("No se pudo conectar con el servidor.");
+      console.error("❌ Error de conexión:", err);
+      setError(err.message || "Error de conexión con el servidor.");
     } finally {
       setLoading(false);
     }
@@ -79,117 +112,107 @@ function AdminPanel() {
     fetchData();
   }, [fetchData]);
 
-  // Acciones CRUD
-  const handleAction = async (method, endpoint, payload = null) => {
-    try {
-      await axios({
-        method,
-        url: `${API_URL}${endpoint}`,
-        data: payload,
-        headers: getHeaders(),
-      });
-      fetchData();
-      alert("Acción realizada con éxito");
-    } catch (e) {
-      alert("Error: " + (e.response?.data?.message || e.message));
-    }
-  };
-
-  // Estilos Dinámicos Sidebar
+  // Estilos
   const isMobile = window.innerWidth < 768;
   const sidebarStyle = {
     width: "250px",
-    minHeight: "100%",
-    position: isMobile ? "absolute" : "relative",
-    zIndex: isMobile ? 1040 : 1,
+    minHeight: "100vh",
+    position: isMobile ? "fixed" : "relative",
+    zIndex: 1040,
     left: 0,
     top: 0,
     bottom: 0,
     transform:
       isMobile && !showMobileSidebar ? "translateX(-100%)" : "translateX(0)",
-    transition: "0.3s",
-    height: isMobile ? "100%" : "auto",
-    boxShadow: showMobileSidebar ? "4px 0 15px rgba(0,0,0,0.1)" : "none",
+    transition: "transform 0.3s ease-in-out",
+    height: "100vh",
   };
 
-  // --- RENDERIZADO PRINCIPAL ---
-  // Agregamos 'data-bs-theme' al contenedor padre. Esto hace la magia de Bootstrap.
+  // Renderizado dinámico
+  const renderContent = () => {
+    const commonProps = { ...data, darkMode, onRefresh: fetchData };
+
+    switch (activeTab) {
+      case "dashboard":
+        return <DashboardOverview {...commonProps} />;
+      case "reports":
+        return <ReportsView {...commonProps} />;
+      case "products":
+        return (
+          <ProductsManager
+            productos={data.productos}
+            categorias={data.categorias}
+            onRefresh={fetchData}
+          />
+        );
+      case "categories":
+        return (
+          <CategoriesManager
+            categorias={data.categorias}
+            onRefresh={fetchData}
+          />
+        );
+      case "users":
+        // Pasamos la lista de usuarios y la función para recargar
+        return <UsersManager usuarios={data.usuarios} onRefresh={fetchData} />;
+      case "orders":
+        return <OrdersView ordenes={data.ordenes} />;
+      case "profile":
+        return <ProfileView />;
+      default:
+        return <DashboardOverview {...commonProps} />;
+    }
+  };
+
   return (
     <div
       className="d-flex flex-column flex-md-row bg-body text-body"
-      style={{ minHeight: "calc(100vh - 80px)", position: "relative" }}
-      data-bs-theme={darkMode ? "dark" : "light"} // <--- MAGIA AQUÍ
+      style={{ minHeight: "100vh" }}
     >
-      {/* HEADER MÓVIL */}
-      <div
-        className="d-md-none bg-body-tertiary p-3 border-bottom d-flex justify-content-between sticky-top"
-        style={{ zIndex: 1020 }}
-      >
+      {/* Header Móvil */}
+      <div className="d-md-none bg-body-tertiary p-3 border-bottom d-flex justify-content-between align-items-center sticky-top">
         <h5 className="m-0 text-primary fw-bold">AdminPanel</h5>
-        <div className="d-flex gap-2">
-          <button
-            className="btn btn-outline-primary"
-            onClick={() => setShowMobileSidebar(!showMobileSidebar)}
-          >
-            <i className="bx bx-menu"></i>
-          </button>
-        </div>
+        <button
+          className="btn btn-outline-primary"
+          onClick={() => setShowMobileSidebar(!showMobileSidebar)}
+        >
+          <i className="bx bx-menu fs-4"></i>
+        </button>
       </div>
 
-      {/* SIDEBAR */}
-      {/* Cambié 'bg-light' por 'bg-body-tertiary' para que cambie de color según el modo */}
+      {/* Sidebar */}
       <div
-        className="bg-body-tertiary border-end p-3 d-flex flex-column"
+        className="bg-body-tertiary border-end p-3 d-flex flex-column shadow-sm"
         style={sidebarStyle}
       >
-        <div className="d-flex justify-content-between align-items-center mb-4 px-2">
+        <div className="mb-4 px-2 pt-2">
           <h5 className="text-primary fw-bold m-0 d-none d-md-block">
             AdminPanel
           </h5>
-          {/* Botón de Tema en Desktop */}
-          <button
-            className="btn btn-sm btn-outline-secondary d-none d-md-block rounded-circle"
-            onClick={toggleTheme}
-            title="Cambiar tema"
-          >
-            <i className={`bx ${darkMode ? "bx-sun" : "bx-moon"} fs-5`}></i>
-          </button>
         </div>
-
-        <div className="nav flex-column gap-2">
+        <div className="nav flex-column gap-2 flex-grow-1">
           {[
-            "dashboard",
-            "reports",
-            "products",
-            "categories",
-            "orders",
-            "users",
-            "profile",
-          ].map((tab) => (
+            { id: "dashboard", icon: "bx-bar-chart-alt-2", label: "Dashboard" },
+            { id: "products", icon: "bx-cube", label: "Productos" },
+            { id: "categories", icon: "bx-category", label: "Categorías" },
+            { id: "orders", icon: "bx-receipt", label: "Pedidos" },
+            { id: "users", icon: "bx-user-circle", label: "Usuarios" },
+            { id: "reports", icon: "bx-pie-chart-alt-2", label: "Reportes" },
+            { id: "profile", icon: "bx-id-card", label: "Mi Perfil" },
+          ].map((item) => (
             <button
-              key={tab}
-              // Lógica para botones activos/inactivos adaptables
+              key={item.id}
               className={`btn text-start d-flex align-items-center gap-2 ${
-                activeTab === tab
+                activeTab === item.id
                   ? "btn-primary shadow-sm"
                   : "btn-ghost text-body hover-bg-secondary"
               }`}
               onClick={() => {
-                setActiveTab(tab);
+                setActiveTab(item.id);
                 setShowMobileSidebar(false);
               }}
-              style={{ opacity: activeTab === tab ? 1 : 0.8 }}
             >
-              {/* Iconos dinámicos */}
-              {tab === "dashboard" && <i className="bx bx-bar-chart-alt-2"></i>}
-              {tab === "reports" && <i className="bx bx-pie-chart-alt-2"></i>}
-              {tab === "products" && <i className="bx bx-cube"></i>}
-              {tab === "categories" && <i className="bx bx-category"></i>}
-              {tab === "orders" && <i className="bx bx-receipt"></i>}
-              {tab === "users" && <i className="bx bx-user-circle"></i>}
-              {tab === "profile" && <i className="bx bx-id-card"></i>}
-
-              {tab.charAt(0).toUpperCase() + tab.slice(1)}
+              <i className={`bx ${item.icon} fs-5`}></i> {item.label}
             </button>
           ))}
         </div>
@@ -198,76 +221,42 @@ function AdminPanel() {
       {/* Backdrop Móvil */}
       {showMobileSidebar && (
         <div
-          className="d-md-none position-absolute w-100 h-100 bg-black opacity-50"
+          className="d-md-none position-fixed top-0 start-0 w-100 h-100 bg-black opacity-50"
           style={{ zIndex: 1030 }}
           onClick={() => setShowMobileSidebar(false)}
         ></div>
       )}
 
-      {/* CONTENIDO */}
+      {/* Contenido Principal */}
       <div
-        className="flex-grow-1 p-4 w-100 bg-body"
-        style={{ overflowY: "auto" }}
+        className="flex-grow-1 p-4 w-100 bg-body overflow-auto"
+        style={{ height: "100vh" }}
       >
-        {loading && <div className="spinner-border text-primary mb-3"></div>}
+        {/* DIAGNÓSTICO DE CONEXIÓN */}
+        {loading && (
+          <div className="alert alert-info">
+            <div className="spinner-border spinner-border-sm me-2"></div>
+            Conectando con Backend...
+          </div>
+        )}
 
         {error && (
-          <div className="alert alert-danger d-flex align-items-center mb-4 rounded-4 shadow-sm animate__animated animate__fadeIn">
-            <i className="bx bx-error-circle fs-4 me-2"></i>
-            <div>{error}</div>
+          <div className="alert alert-danger shadow-sm border-0 rounded-3">
+            <h5 className="fw-bold">
+              <i className="bx bx-error-circle"></i> Error de Conexión
+            </h5>
+            <p className="mb-0">{error}</p>
+            <small>
+              Sugerencia: Si usas Render Free, espera 1 minuto y recarga la
+              página.
+            </small>
           </div>
         )}
 
-        {/* Pasamos 'darkMode' como prop a los gráficos si es necesario ajustar colores específicos */}
-        {activeTab === "dashboard" && (
-          <DashboardOverview {...data} darkMode={darkMode} />
-        )}
-        {activeTab === "reports" && (
-          <ReportsView {...data} darkMode={darkMode} />
-        )}
-
-        {activeTab === "products" && (
-          <div className="row">
-            <div className="col-md-4 mb-4">
-              <ProductoForm
-                onGuardar={(d) => handleAction("post", "/productos", d)}
-                categoriasDisponibles={data.categorias}
-              />
-            </div>
-            <div className="col-md-8">
-              <ProductoList
-                productos={data.productos}
-                onEliminar={(id) => handleAction("delete", `/productos/${id}`)}
-                onActualizarStock={(id, val) =>
-                  handleAction("put", `/productos/${id}/stock?cantidad=${val}`)
-                }
-              />
-            </div>
-          </div>
-        )}
-
-        {activeTab === "categories" && (
-          <CategoriesManager
-            categorias={data.categorias}
-            onAddCategory={(d) => handleAction("post", "/categorias", d)}
-            onDeleteCategory={(id) =>
-              handleAction("delete", `/categorias/${id}`)
-            }
-          />
-        )}
-
-        {activeTab === "users" && (
-          <UsersManager
-            usuarios={data.usuarios}
-            onDeleteUser={(id) => handleAction("delete", `/usuarios/${id}`)}
-          />
-        )}
-
-        {activeTab === "orders" && <OrdersView ordenes={data.ordenes} />}
-
-        {activeTab === "profile" && <ProfileView />}
+        {!loading && !error && renderContent()}
       </div>
     </div>
   );
 }
+
 export default AdminPanel;

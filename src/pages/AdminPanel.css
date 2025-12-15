@@ -1,0 +1,99 @@
+/* --- TRANSICIONES SUAVES --- */
+.admin-sidebar,
+.admin-content,
+.card,
+.navbar,
+body {
+  transition: all 0.3s ease-in-out;
+}
+
+/* --- SIDEBAR RESPONSIVO --- */
+/* Por defecto (Desktop) el sidebar es fijo */
+.admin-sidebar {
+  width: 260px;
+  height: 100vh;
+  position: fixed;
+  top: 80px; /* Ajusta según la altura de tu Navbar principal */
+  left: 0;
+  z-index: 1040;
+  overflow-y: auto;
+}
+
+/* El contenido principal deja espacio al sidebar */
+.admin-content {
+  margin-left: 260px;
+  width: calc(100% - 260px);
+  padding: 20px;
+}
+
+/* --- MODIFICACIONES PARA MÓVIL (Pantallas < 768px) --- */
+@media (max-width: 768px) {
+  .admin-sidebar {
+    left: -270px; /* Oculto a la izquierda */
+  }
+
+  .admin-sidebar.show {
+    left: 0; /* Aparece al activarse */
+    box-shadow: 5px 0 15px rgba(0, 0, 0, 0.3);
+  }
+
+  .admin-content {
+    margin-left: 0; /* Ocupa todo el ancho */
+    width: 100%;
+  }
+
+  /* Overlay oscuro cuando el menú está abierto en móvil */
+  .sidebar-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background: rgba(0, 0, 0, 0.5);
+    z-index: 1030;
+    display: none;
+  }
+  .sidebar-overlay.show {
+    display: block;
+  }
+}
+
+/* --- MODO OSCURO (DARK MODE) --- */
+.dark-mode {
+  background-color: #121212 !important;
+  color: #e0e0e0 !important;
+}
+
+/* Tarjetas en modo oscuro */
+.dark-mode .card {
+  background-color: #1e1e1e !important;
+  border-color: #333 !important;
+  color: #fff;
+}
+
+.dark-mode .table {
+  color: #fff !important;
+  border-color: #333;
+}
+
+.dark-mode .table thead th {
+  background-color: #2c2c2c;
+  color: #fff;
+  border-color: #444;
+}
+
+.dark-mode .table-hover tbody tr:hover {
+  color: #fff;
+  background-color: #333 !important;
+}
+
+.dark-mode .form-control,
+.dark-mode .form-select {
+  background-color: #2c2c2c;
+  border-color: #444;
+  color: #fff;
+}
+
+.dark-mode .form-control::placeholder {
+  color: #aaa;
+}
