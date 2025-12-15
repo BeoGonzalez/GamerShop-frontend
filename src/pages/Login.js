@@ -37,13 +37,8 @@ const Login = ({ onLogin }) => {
 
         console.log("✅ Login exitoso. Rol:", data.rol);
 
-        // =======================================================
-        // 🔑 PARTE CRÍTICA: GUARDAR CON EL NOMBRE CORRECTO
-        // =======================================================
-        // Antes quizás decia "token", ahora DEBE decir "jwt_token"
-        // para que coincida con ProductsManager.js y los demás.
+        // Guardamos el token con el nombre correcto
         localStorage.setItem("jwt_token", data.token);
-
         localStorage.setItem("rol", data.rol);
         localStorage.setItem("username", data.username);
 
@@ -52,11 +47,11 @@ const Login = ({ onLogin }) => {
           onLogin(data);
         }
 
-        // Redirección inteligente según el Rol
+        // Redirección inteligente
         if (data.rol === "ADMIN") {
           navigate("/admin");
         } else {
-          navigate("/"); // O a /mis-compras
+          navigate("/");
         }
       }
     } catch (err) {
@@ -72,9 +67,11 @@ const Login = ({ onLogin }) => {
   };
 
   return (
-    <div className="container d-flex justify-content-center align-items-center min-vh-100">
+    // bg-body asegura el fondo correcto detrás de la tarjeta
+    <div className="container d-flex justify-content-center align-items-center min-vh-100 animate__animated animate__fadeIn">
       <div
-        className="card shadow-lg p-4 rounded-4"
+        // bg-body-tertiary: Se adapta (Gris claro en día / Gris oscuro en noche)
+        className="card shadow-lg p-4 rounded-4 border-0 bg-body-tertiary"
         style={{ width: "100%", maxWidth: "400px" }}
       >
         <div className="text-center mb-4">
@@ -82,8 +79,11 @@ const Login = ({ onLogin }) => {
             className="bx bxs-user-circle text-primary"
             style={{ fontSize: "4rem" }}
           ></i>
-          <h3 className="fw-bold mt-2">Bienvenido</h3>
-          <p className="text-muted small">Ingresa a tu cuenta GamerShop</p>
+          {/* text-body-emphasis: Negro en día / Blanco brillante en noche */}
+          <h3 className="fw-bold mt-2 text-body-emphasis">Bienvenido</h3>
+          <p className="text-body-secondary small">
+            Ingresa a tu cuenta GamerShop
+          </p>
         </div>
 
         {error && (
@@ -94,14 +94,18 @@ const Login = ({ onLogin }) => {
 
         <form onSubmit={handleSubmit}>
           <div className="mb-3">
-            <label className="form-label fw-bold small">Usuario</label>
+            <label className="form-label fw-bold small text-body-secondary">
+              Usuario
+            </label>
             <div className="input-group">
-              <span className="input-group-text bg-light border-end-0">
+              {/* bg-body y text-body-secondary para el icono */}
+              <span className="input-group-text bg-body text-body-secondary border-end-0 border-secondary-subtle">
                 <i className="bx bx-user"></i>
               </span>
+              {/* bg-body y text-body para el input */}
               <input
                 type="text"
-                className="form-control border-start-0 ps-0"
+                className="form-control border-start-0 ps-0 bg-body text-body border-secondary-subtle"
                 name="username"
                 placeholder="Ej: admin1"
                 value={formData.username}
@@ -112,14 +116,16 @@ const Login = ({ onLogin }) => {
           </div>
 
           <div className="mb-4">
-            <label className="form-label fw-bold small">Contraseña</label>
+            <label className="form-label fw-bold small text-body-secondary">
+              Contraseña
+            </label>
             <div className="input-group">
-              <span className="input-group-text bg-light border-end-0">
+              <span className="input-group-text bg-body text-body-secondary border-end-0 border-secondary-subtle">
                 <i className="bx bx-lock-alt"></i>
               </span>
               <input
                 type="password"
-                className="form-control border-start-0 ps-0"
+                className="form-control border-start-0 ps-0 bg-body text-body border-secondary-subtle"
                 name="password"
                 placeholder="••••••"
                 value={formData.password}
@@ -131,7 +137,7 @@ const Login = ({ onLogin }) => {
 
           <button
             type="submit"
-            className="btn btn-primary w-100 fw-bold py-2 rounded-pill mb-3"
+            className="btn btn-primary w-100 fw-bold py-2 rounded-pill mb-3 shadow-sm"
             disabled={loading}
           >
             {loading ? (
@@ -150,10 +156,10 @@ const Login = ({ onLogin }) => {
         </form>
 
         <div className="text-center mt-2">
-          <p className="small text-muted mb-0">¿No tienes cuenta?</p>
+          <p className="small text-body-secondary mb-0">¿No tienes cuenta?</p>
           <Link
             to="/register"
-            className="text-primary fw-bold text-decoration-none"
+            className="text-primary fw-bold text-decoration-none hover-underline"
           >
             Regístrate aquí
           </Link>

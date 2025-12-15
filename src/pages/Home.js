@@ -36,7 +36,8 @@ function Home() {
           <h2 className="fw-bold display-6 text-primary">
             <i className="bx bx-star"></i> Productos Destacados
           </h2>
-          <p className="text-body opacity-75">
+          {/* Texto adaptable: text-body-secondary */}
+          <p className="text-body-secondary fs-5">
             Lo último en tecnología para llevar tu setup al siguiente nivel.
           </p>
         </div>
@@ -45,7 +46,7 @@ function Home() {
         {loading && (
           <div className="text-center py-5">
             <div className="spinner-border text-primary" role="status"></div>
-            <p className="mt-2 text-muted">Cargando inventario...</p>
+            <p className="mt-2 text-body-secondary">Cargando inventario...</p>
           </div>
         )}
 
@@ -56,16 +57,16 @@ function Home() {
           </div>
         )}
 
-        {/* --- NUEVA VALIDACIÓN: SI NO HAY PRODUCTOS --- */}
+        {/* --- VALIDACIÓN: SI NO HAY PRODUCTOS --- */}
         {!loading && !error && productos.length === 0 && (
           <div className="text-center py-5 animate__animated animate__fadeIn">
             <div className="mb-3 text-secondary opacity-50">
               <i className="bx bx-package" style={{ fontSize: "5rem" }}></i>
             </div>
-            <h3 className="fw-bold text-body">
+            <h3 className="fw-bold text-body-emphasis">
               No hay productos en el almacén
             </h3>
-            <p className="text-muted">
+            <p className="text-body-secondary">
               Estamos reponiendo stock. ¡Vuelve pronto!
             </p>
           </div>
@@ -76,11 +77,11 @@ function Home() {
           <div className="row g-4">
             {productos.map((prod) => (
               <div key={prod.id} className="col-12 col-md-6 col-lg-3">
-                {/* CARD DEL PRODUCTO */}
+                {/* CARD DEL PRODUCTO: bg-body-tertiary para fondo adaptable */}
                 <div className="card border-0 shadow-lg rounded-4 overflow-hidden h-100 bg-body-tertiary transition-hover">
-                  {/* HEADER DE LA CARD (IMAGEN) */}
+                  {/* HEADER (IMAGEN): bg-body para que cambie blanco/negro */}
                   <div
-                    className="position-relative bg-white d-flex align-items-center justify-content-center overflow-hidden"
+                    className="position-relative bg-body d-flex align-items-center justify-content-center overflow-hidden"
                     style={{ height: "250px" }}
                   >
                     {/* Badge de Categoría */}
@@ -111,25 +112,27 @@ function Home() {
 
                   {/* BODY DE LA CARD */}
                   <div className="card-body d-flex flex-column p-4">
-                    {/* Nombre */}
+                    {/* Nombre: text-body-emphasis (Negro fuerte / Blanco brillante) */}
                     <h5
-                      className="fw-bold text-body mb-1 text-truncate"
+                      className="fw-bold text-body-emphasis mb-1 text-truncate"
                       title={prod.nombre}
                     >
                       {prod.nombre}
                     </h5>
 
-                    {/* Descripción corta */}
-                    <small className="text-muted mb-3 d-block text-truncate">
+                    {/* Descripción: text-body-secondary (Gris medio adaptable) */}
+                    <small className="text-body-secondary mb-3 d-block text-truncate">
                       {prod.descripcion || "Sin descripción disponible"}
                     </small>
 
                     {/* Precio y Stock */}
                     <div className="mt-auto">
                       <div className="d-flex justify-content-between align-items-center mb-3">
+                        {/* Precio: text-body (Adaptable) o success */}
                         <span className="fs-4 fw-bold text-success">
                           ${prod.precio.toLocaleString()}
                         </span>
+
                         {prod.stock > 0 ? (
                           <span className="badge bg-success-subtle text-success-emphasis border border-success-subtle rounded-pill">
                             Stock: {prod.stock}
@@ -141,7 +144,7 @@ function Home() {
                         )}
                       </div>
 
-                      {/* BOTÓN DE ACCIÓN PRINCIPAL */}
+                      {/* BOTÓN DE ACCIÓN */}
                       <Link
                         to={`/producto/${prod.id}`}
                         className="btn btn-primary w-100 rounded-pill fw-bold shadow-sm d-flex align-items-center justify-content-center gap-2"

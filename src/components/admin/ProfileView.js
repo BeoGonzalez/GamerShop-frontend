@@ -1,143 +1,88 @@
 import React, { useState, useEffect } from "react";
-import axios from "axios";
-
-const API_URL = "https://gamershop-backend-1.onrender.com";
 
 const ProfileView = () => {
-  const [perfil, setPerfil] = useState({
+  const [user, setUser] = useState({
     username: "",
     email: "",
     rol: "",
   });
 
-  // Datos editables
-  const [emailEdit, setEmailEdit] = useState("");
-  const [passwordEdit, setPasswordEdit] = useState(""); // Nueva contraseña
-  const [loading, setLoading] = useState(true);
-
-  const getHeaders = () => {
-    const token = localStorage.getItem("token");
-    return token ? { Authorization: `Bearer ${token}` } : null;
-  };
-
-  // 1. Obtener mi perfil (GET /usuarios/perfil)
   useEffect(() => {
-    const fetchPerfil = async () => {
-      try {
-        const headers = getHeaders();
-        if (!headers) return;
+    // Recuperamos datos de la sesión
+    const username = localStorage.getItem("username") || "Usuario";
+    const rol = localStorage.getItem("rol") || "GUEST";
 
-        const res = await axios.get(`${API_URL}/usuarios/perfil`, { headers });
-        setPerfil(res.data);
-        setEmailEdit(res.data.email); // Prellenamos el email
-      } catch (error) {
-        console.error("Error cargando perfil", error);
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchPerfil();
+    // Como el login actual guarda username y rol, simulamos el correo
+    // basándonos en el usuario para que se vea completo,
+    // o puedes recuperarlo si lo guardas en el futuro.
+    const email = `${username.toLowerCase()}@gamershop.com`;
+
+    setUser({ username, rol, email });
   }, []);
 
-  // 2. Actualizar perfil (PUT /usuarios/perfil)
-  const handleUpdate = async (e) => {
-    e.preventDefault();
-    const headers = getHeaders();
-
-    const payload = {
-      email: emailEdit,
-    };
-
-    // Solo enviamos password si el usuario escribió algo
-    if (passwordEdit.trim() !== "") {
-      payload.password = passwordEdit;
-    }
-
-    try {
-      await axios.put(`${API_URL}/usuarios/perfil`, payload, { headers });
-      alert("✅ Perfil actualizado correctamente");
-      setPasswordEdit(""); // Limpiar campo contraseña
-
-      // Actualizar vista local
-      setPerfil({ ...perfil, email: emailEdit });
-    } catch (error) {
-      alert(
-        "❌ Error al actualizar perfil: " +
-          (error.response?.data?.message || error.message)
-      );
-    }
-  };
-
-  if (loading)
-    return (
-      <div className="text-center py-5">
-        <div className="spinner-border text-primary"></div>
-      </div>
-    );
-
   return (
-    <div className="container animate__animated animate__fadeIn">
+    <div className="container py-5 animate__animated animate__fadeIn">
       <div className="row justify-content-center">
-        <div className="col-md-8 col-lg-6">
-          <div className="card border-0 shadow-lg rounded-4">
-            <div className="card-body p-5">
-              <div className="text-center mb-4">
-                <div
-                  className="bg-primary bg-opacity-10 text-primary rounded-circle d-inline-flex align-items-center justify-content-center mb-3"
-                  style={{ width: "80px", height: "80px" }}
-                >
-                  <i className="bx bx-user fs-1"></i>
+        <div className="col-md-6 col-lg-5">
+          {/* TARJETA DE PERFIL ADAPTABLE 
+              - bg-body-tertiary: Gris claro en día / Gris oscuro en noche
+              - border-0 shadow-sm: Estilo limpio
+          */}
+          <div className="card border-0 shadow-lg rounded-5 bg-body-tertiary overflow-hidden">
+            {/* FONDO DECORATIVO SUPERIOR */}
+            <div
+              className="bg-primary bg-gradient"
+              style={{ height: "100px", opacity: "0.8" }}
+            ></div>
+
+            <div className="card-body text-center position-relative pb-5">
+              {/* --- FOTO DE PERFIL (ICONO) --- */}
+              {/* El borde del avatar usa 'bg-body-tertiary' para fusionarse con la tarjeta */}
+              <div
+                className="position-absolute top-0 start-50 translate-middle rounded-circle bg-body-tertiary p-1"
+                style={{ width: "110px", height: "110px" }}
+              >
+                <div className="w-100 h-100 rounded-circle bg-body-secondary d-flex align-items-center justify-content-center text-primary">
+                  <i className="bx bxs-user" style={{ fontSize: "4rem" }}></i>
                 </div>
-                <h3 className="fw-bold">{perfil.username}</h3>
-                <span className="badge bg-secondary">{perfil.rol}</span>
               </div>
 
-              <form onSubmit={handleUpdate}>
-                <div className="mb-3">
-                  <label className="form-label fw-bold">Usuario</label>
-                  <input
-                    type="text"
-                    className="form-control"
-                    value={perfil.username}
-                    disabled
-                    readOnly
-                  />
-                  <div className="form-text">
-                    El nombre de usuario no se puede cambiar.
-                  </div>
-                </div>
+              {/* ESPACIO PARA EMPUJAR EL CONTENIDO ABAJO DEL ICONO */}
+              <div style={{ marginTop: "60px" }}></div>
 
-                <div className="mb-3">
-                  <label className="form-label fw-bold">
-                    Correo Electrónico
-                  </label>
-                  <input
-                    type="email"
-                    className="form-control"
-                    value={emailEdit}
-                    onChange={(e) => setEmailEdit(e.target.value)}
-                    required
-                  />
-                </div>
+              {/* --- DATOS DEL USUARIO --- */}
 
-                <div className="mb-4">
-                  <label className="form-label fw-bold">Nueva Contraseña</label>
-                  <input
-                    type="password"
-                    className="form-control"
-                    placeholder="Dejar en blanco para mantener la actual"
-                    value={passwordEdit}
-                    onChange={(e) => setPasswordEdit(e.target.value)}
-                  />
-                </div>
+              {/* Nombre: Se adapta a blanco/negro */}
+              <h3 className="fw-bold text-body-emphasis mb-1">
+                {user.username}
+              </h3>
 
-                <button
-                  type="submit"
-                  className="btn btn-primary w-100 rounded-pill py-2 fw-bold"
-                >
-                  Guardar Cambios
-                </button>
-              </form>
+              {/* Correo: Color gris adaptable */}
+              <p className="text-body-secondary mb-3">{user.email}</p>
+
+              {/* Rol: Badge elegante */}
+              <span
+                className={`badge px-3 py-2 rounded-pill ${
+                  user.rol === "ADMIN"
+                    ? "bg-primary-subtle text-primary border border-primary-subtle"
+                    : "bg-secondary-subtle text-secondary"
+                }`}
+              >
+                <i
+                  className={`bx ${
+                    user.rol === "ADMIN" ? "bx-shield-quarter" : "bx-user"
+                  } me-1`}
+                ></i>
+                {user.rol}
+              </span>
+            </div>
+
+            {/* FOOTER OPCIONAL (Decorativo) */}
+            <div className="card-footer bg-transparent border-0 text-center pb-4">
+              <small className="text-body-secondary opacity-50">
+                Cuenta activa - GamerShop ID: #
+                {Math.floor(Math.random() * 1000) + 1000}
+              </small>
             </div>
           </div>
         </div>

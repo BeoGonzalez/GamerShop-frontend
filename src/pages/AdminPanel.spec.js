@@ -6,16 +6,12 @@ import AdminPanel from "./AdminPanel";
 
 describe("Página: AdminPanel", () => {
   beforeEach(() => {
-    // 1. Mock de localStorage
     localStorage.setItem("jwt_token", "fake-admin-token");
 
-    // 2. Mock de Axios
-    spyOn(axios, "get").and.callFake((url) => {
-      // Devolvemos datos vacíos para no romper la carga
-      return Promise.resolve({ data: [] });
-    });
+    // Mock Axios
+    spyOn(axios, "get").and.returnValue(Promise.resolve({ data: [] }));
 
-    // 3. Mock de Fetch
+    // Mock Fetch (usado a veces por componentes hijos)
     spyOn(window, "fetch").and.returnValue(
       Promise.resolve({
         ok: true,
@@ -35,11 +31,12 @@ describe("Página: AdminPanel", () => {
       </MemoryRouter>
     );
 
-    // Usamos getByRole para ser específicos y evitar confusión con textos sueltos
     await waitFor(() => {
+      // Verificamos botones reales de tu AdminPanel.js
       expect(screen.getByRole("button", { name: /Dashboard/i })).toBeTruthy();
       expect(screen.getByRole("button", { name: /Productos/i })).toBeTruthy();
-      expect(screen.getByRole("button", { name: /Ventas/i })).toBeTruthy();
+      // CAMBIO: Antes era "Ventas", ahora tu código usa "Pedidos"
+      expect(screen.getByRole("button", { name: /Pedidos/i })).toBeTruthy();
     });
   });
 
@@ -50,21 +47,21 @@ describe("Página: AdminPanel", () => {
       </MemoryRouter>
     );
 
-    // 1. Estamos en Dashboard (Verificamos título)
+    // 1. Verificar Dashboard Inicial (Buscamos un texto del DashboardOverview)
     await waitFor(() => {
-      expect(screen.getByText(/Estadísticas Generales/i)).toBeTruthy();
+      // "Ventas Totales" es un texto fijo en tu DashboardOverview
+      expect(screen.getByText(/Ventas Totales/i)).toBeTruthy();
     });
 
-    // 2. CORRECCIÓN CLAVE: Buscar el BOTÓN específico, no cualquier texto "Productos"
-    // Esto evita el conflicto con "Productos Activos"
+    // 2. Clic en Productos
     const tabProductos = screen.getByRole("button", { name: /Productos/i });
-
     fireEvent.click(tabProductos);
 
-    // 3. Verificamos que cambió el contenido
+    // 3. Verificamos contenido de ProductosManager
     await waitFor(() => {
-      // El botón "Nuevo" solo aparece en la vista de productos
-      expect(screen.getByText(/Nuevo/i)).toBeTruthy();
+      // ProductsManager tiene un título o botón "Nuevo Producto"
+      // Usamos un regex flexible
+      expect(screen.getByText(/Nuevo Producto/i)).toBeTruthy();
     });
   });
 });
