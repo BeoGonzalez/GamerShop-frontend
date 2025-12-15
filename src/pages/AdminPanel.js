@@ -16,7 +16,7 @@ function AdminPanel() {
   const [activeTab, setActiveTab] = useState("dashboard");
   const [showMobileSidebar, setShowMobileSidebar] = useState(false);
 
-  // Detectar tema global
+  // Detectar tema global (Útil si necesitas lógica JS específica, pero el CSS lo hará automático)
   const [darkMode, setDarkMode] = useState(
     document.documentElement.getAttribute("data-bs-theme") === "dark"
   );
@@ -38,17 +38,14 @@ function AdminPanel() {
   const [data, setData] = useState({
     productos: [],
     categorias: [],
-    usuarios: [], // <--- Aquí se guardarán tus usuarios
+    usuarios: [],
     ordenes: [],
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
-  // =================================================================
-  // 1. CORRECCIÓN CRÍTICA: Nombre del Token
-  // =================================================================
+  // 1. OBTENER TOKEN
   const getHeaders = () => {
-    // CAMBIO: Antes decia "token", ahora debe ser "jwt_token" para coincidir con Login.js
     const token = localStorage.getItem("jwt_token");
     return token ? { Authorization: `Bearer ${token}` } : null;
   };
@@ -61,40 +58,30 @@ function AdminPanel() {
     console.log("🔄 Conectando a:", API_URL);
 
     try {
-      // Usamos allSettled para que si falla uno, no rompa todo el panel
       const [p, c, u, o] = await Promise.allSettled([
-        // Productos y Categorías (Públicos o sin header estricto en GET según tu config)
         axios.get(`${API_URL}/productos`),
         axios.get(`${API_URL}/categorias`),
-
-        // Usuarios (Requiere Auth sí o sí)
         headers
           ? axios.get(`${API_URL}/usuarios`, { headers })
-          : Promise.reject({ msg: "No hay sesión activa (Falta jwt_token)" }),
-
-        // Ordenes (Requiere Auth sí o sí)
+          : Promise.reject({ msg: "No Auth" }),
         headers
           ? axios.get(`${API_URL}/ordenes`, { headers })
           : Promise.reject({ msg: "No Auth" }),
       ]);
 
-      // DIAGNÓSTICO EN CONSOLA
       if (u.status === "fulfilled") {
         console.log("✅ Usuarios cargados:", u.value.data.length);
       } else {
         console.warn("⚠️ No se pudieron cargar usuarios:", u.reason);
       }
 
-      // Guardamos lo que se pudo cargar
       setData({
         productos: p.status === "fulfilled" ? p.value.data : [],
         categorias: c.status === "fulfilled" ? c.value.data : [],
-        // Aquí asignamos la data de usuarios
         usuarios: u.status === "fulfilled" ? u.value.data : [],
         ordenes: o.status === "fulfilled" ? o.value.data : [],
       });
 
-      // Si falla productos, es un error de red grave
       if (p.status === "rejected") {
         throw new Error(
           "No se pudo conectar con el Backend (¿Render está dormido?)"
@@ -112,7 +99,7 @@ function AdminPanel() {
     fetchData();
   }, [fetchData]);
 
-  // Estilos
+  // Estilos Sidebar
   const isMobile = window.innerWidth < 768;
   const sidebarStyle = {
     width: "250px",
@@ -130,6 +117,7 @@ function AdminPanel() {
 
   // Renderizado dinámico
   const renderContent = () => {
+    // Pasamos darkMode a los hijos por si lo necesitan para lógica interna
     const commonProps = { ...data, darkMode, onRefresh: fetchData };
 
     switch (activeTab) {
@@ -153,7 +141,6 @@ function AdminPanel() {
           />
         );
       case "users":
-        // Pasamos la lista de usuarios y la función para recargar
         return <UsersManager usuarios={data.usuarios} onRefresh={fetchData} />;
       case "orders":
         return <OrdersView ordenes={data.ordenes} />;
@@ -165,11 +152,12 @@ function AdminPanel() {
   };
 
   return (
+    // CLASE CLAVE: bg-body y text-body hacen que el fondo sea blanco/negro automáticamente
     <div
       className="d-flex flex-column flex-md-row bg-body text-body"
       style={{ minHeight: "100vh" }}
     >
-      {/* Header Móvil */}
+      {/* Header Móvil (bg-body-tertiary adapta el gris del header) */}
       <div className="d-md-none bg-body-tertiary p-3 border-bottom d-flex justify-content-between align-items-center sticky-top">
         <h5 className="m-0 text-primary fw-bold">AdminPanel</h5>
         <button
@@ -180,7 +168,7 @@ function AdminPanel() {
         </button>
       </div>
 
-      {/* Sidebar */}
+      {/* Sidebar (bg-body-tertiary adapta el fondo de la barra lateral) */}
       <div
         className="bg-body-tertiary border-end p-3 d-flex flex-column shadow-sm"
         style={sidebarStyle}
@@ -202,15 +190,19 @@ function AdminPanel() {
           ].map((item) => (
             <button
               key={item.id}
-              className={`btn text-start d-flex align-items-center gap-2 ${
+              // AQUÍ ESTÁ LA MAGIA DE LOS BOTONES:
+              // - text-body: El texto se vuelve blanco en dark mode.
+              // - hover-bg-secondary-subtle: Efecto hover suave en ambos modos.
+              className={`btn text-start d-flex align-items-center gap-2 border-0 ${
                 activeTab === item.id
-                  ? "btn-primary shadow-sm"
-                  : "btn-ghost text-body hover-bg-secondary"
+                  ? "btn-primary shadow-sm fw-bold" // Activo
+                  : "bg-transparent text-body opacity-75 hover-opacity-100" // Inactivo (Adaptable)
               }`}
               onClick={() => {
                 setActiveTab(item.id);
                 setShowMobileSidebar(false);
               }}
+              style={{ transition: "all 0.2s" }}
             >
               <i className={`bx ${item.icon} fs-5`}></i> {item.label}
             </button>
@@ -227,7 +219,7 @@ function AdminPanel() {
         ></div>
       )}
 
-      {/* Contenido Principal */}
+      {/* Contenido Principal (bg-body asegura el fondo correcto) */}
       <div
         className="flex-grow-1 p-4 w-100 bg-body overflow-auto"
         style={{ height: "100vh" }}

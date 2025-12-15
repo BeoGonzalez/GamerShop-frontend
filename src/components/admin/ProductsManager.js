@@ -37,9 +37,7 @@ const ProductsManager = ({ productos = [], categorias = [], onRefresh }) => {
   // --- GESTIÓN DE VARIANTES ---
   const handleAddVariante = () => {
     if (!varianteTemp.color.trim() || !varianteTemp.url.trim()) {
-      alert(
-        "⚠️ Debes ingresar un Color y una URL de imagen para agregar la variante."
-      );
+      alert("⚠️ Debes ingresar un Color y una URL de imagen.");
       return;
     }
     setVariantesList([...variantesList, varianteTemp]);
@@ -56,7 +54,6 @@ const ProductsManager = ({ productos = [], categorias = [], onRefresh }) => {
     setModoEdicion(true);
     setProdId(prod.id);
 
-    // Parseo seguro del JSON de variantes
     let varsArray = [];
     if (prod.variantes) {
       try {
@@ -98,22 +95,16 @@ const ProductsManager = ({ productos = [], categorias = [], onRefresh }) => {
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    // 1. CORRECCIÓN ESLINT: Declaramos la variable UNA sola vez aquí
     let listaFinalVariantes = [...variantesList];
 
-    // 2. BLINDAJE UX: Verificar si el usuario olvidó darle al botón (+)
+    // Blindaje UX: Si olvidó darle al (+)
     if (varianteTemp.color.trim() !== "" || varianteTemp.url.trim() !== "") {
       const confirmar = window.confirm(
-        "⚠️ Tienes datos escritos en 'Variantes' pero no le diste al botón (+). \n\n¿Quieres agregarlos automáticamente antes de guardar?"
+        "⚠️ Tienes datos en 'Variantes' sin agregar (+). ¿Incluirlos?"
       );
-
       if (confirmar) {
-        // Agregamos la variante pendiente a la lista final
         listaFinalVariantes.push(varianteTemp);
-
-        // Limpiamos visualmente los inputs
         setVarianteTemp({ color: "", url: "" });
-        // Actualizamos el estado visual también (opcional, por si falla el envío)
         setVariantesList(listaFinalVariantes);
       }
     }
@@ -129,7 +120,6 @@ const ProductsManager = ({ productos = [], categorias = [], onRefresh }) => {
       return;
     }
 
-    // Convertimos la lista a JSON String para Java
     const variantesJsonString = JSON.stringify(listaFinalVariantes);
 
     const payload = {
@@ -138,7 +128,7 @@ const ProductsManager = ({ productos = [], categorias = [], onRefresh }) => {
       precio: parseFloat(formData.precio),
       stock: parseInt(formData.stock),
       imagen: formData.imagen,
-      variantes: variantesJsonString, // <--- Enviamos el JSON String corregido
+      variantes: variantesJsonString,
       categoria: {
         id: parseInt(formData.categoriaId),
       },
@@ -150,9 +140,7 @@ const ProductsManager = ({ productos = [], categorias = [], onRefresh }) => {
     const method = modoEdicion ? "put" : "post";
 
     try {
-      console.log("📤 Payload enviado:", payload);
       await axios({ method, url, data: payload, headers });
-
       alert(
         modoEdicion ? "✅ Actualizado correctamente" : "✅ Creado correctamente"
       );
@@ -160,7 +148,7 @@ const ProductsManager = ({ productos = [], categorias = [], onRefresh }) => {
       onRefresh();
     } catch (error) {
       console.error(error);
-      alert("❌ Error al guardar. Revisa la consola.");
+      alert("❌ Error al guardar.");
     }
   };
 
@@ -181,7 +169,8 @@ const ProductsManager = ({ productos = [], categorias = [], onRefresh }) => {
     <div className="row g-4 animate__animated animate__fadeIn">
       {/* FORMULARIO */}
       <div className="col-lg-5">
-        <div className="card border-0 shadow-sm rounded-4 h-100">
+        {/* Cambiado: bg-body-tertiary para adaptarse */}
+        <div className="card border-0 shadow-sm rounded-4 h-100 bg-body-tertiary">
           <div className="card-header bg-transparent border-0 pt-4 px-4">
             <h5 className="fw-bold text-primary mb-0">
               {modoEdicion ? "✏️ Editar Producto" : "➕ Nuevo Producto"}
@@ -190,20 +179,20 @@ const ProductsManager = ({ productos = [], categorias = [], onRefresh }) => {
           <div className="card-body px-4 pb-4">
             <form onSubmit={handleSubmit}>
               <div className="mb-2">
-                <label className="small text-muted">Nombre</label>
+                <label className="small text-body-secondary">Nombre</label>
                 <input
                   name="nombre"
-                  className="form-control"
+                  className="form-control bg-body text-body"
                   value={formData.nombre}
                   onChange={handleChange}
                   required
                 />
               </div>
               <div className="mb-2">
-                <label className="small text-muted">Descripción</label>
+                <label className="small text-body-secondary">Descripción</label>
                 <textarea
                   name="descripcion"
-                  className="form-control"
+                  className="form-control bg-body text-body"
                   rows="2"
                   value={formData.descripcion}
                   onChange={handleChange}
@@ -211,23 +200,23 @@ const ProductsManager = ({ productos = [], categorias = [], onRefresh }) => {
               </div>
               <div className="row g-2 mb-2">
                 <div className="col-6">
-                  <label className="small text-muted">Precio</label>
+                  <label className="small text-body-secondary">Precio</label>
                   <input
                     name="precio"
                     type="number"
                     step="0.01"
-                    className="form-control"
+                    className="form-control bg-body text-body"
                     value={formData.precio}
                     onChange={handleChange}
                     required
                   />
                 </div>
                 <div className="col-6">
-                  <label className="small text-muted">Stock</label>
+                  <label className="small text-body-secondary">Stock</label>
                   <input
                     name="stock"
                     type="number"
-                    className="form-control"
+                    className="form-control bg-body text-body"
                     value={formData.stock}
                     onChange={handleChange}
                     required
@@ -235,10 +224,10 @@ const ProductsManager = ({ productos = [], categorias = [], onRefresh }) => {
                 </div>
               </div>
               <div className="mb-2">
-                <label className="small text-muted">Categoría</label>
+                <label className="small text-body-secondary">Categoría</label>
                 <select
                   name="categoriaId"
-                  className="form-select"
+                  className="form-select bg-body text-body"
                   value={formData.categoriaId}
                   onChange={handleChange}
                   required
@@ -252,25 +241,28 @@ const ProductsManager = ({ productos = [], categorias = [], onRefresh }) => {
                 </select>
               </div>
               <div className="mb-3">
-                <label className="small text-muted">URL Imagen Principal</label>
+                <label className="small text-body-secondary">
+                  URL Imagen Principal
+                </label>
                 <input
                   name="imagen"
-                  className="form-control"
+                  className="form-control bg-body text-body"
                   value={formData.imagen}
                   onChange={handleChange}
                 />
               </div>
 
-              {/* GESTOR VISUAL DE VARIANTES */}
-              <div className="card bg-light border-0 p-3 mb-4 rounded-3">
-                <label className="fw-bold small mb-2 text-dark">
+              {/* === GESTOR VISUAL DE VARIANTES CORREGIDO === */}
+              {/* Usamos 'bg-body' y borde sutil para que resalte sobre el fondo terciario */}
+              <div className="card bg-body border border-secondary-subtle p-3 mb-4 rounded-3 shadow-sm">
+                <label className="fw-bold small mb-2 text-body-emphasis">
                   <i className="bx bx-palette me-1"></i> Variantes de Color
                 </label>
 
                 <div className="input-group mb-2">
                   <input
                     type="text"
-                    className="form-control form-control-sm"
+                    className="form-control form-control-sm bg-body-tertiary text-body"
                     placeholder="Color (Ej: Rojo)"
                     value={varianteTemp.color}
                     onChange={(e) =>
@@ -282,7 +274,7 @@ const ProductsManager = ({ productos = [], categorias = [], onRefresh }) => {
                   />
                   <input
                     type="text"
-                    className="form-control form-control-sm"
+                    className="form-control form-control-sm bg-body-tertiary text-body"
                     placeholder="URL Imagen"
                     value={varianteTemp.url}
                     onChange={(e) =>
@@ -293,7 +285,7 @@ const ProductsManager = ({ productos = [], categorias = [], onRefresh }) => {
                     type="button"
                     className="btn btn-dark btn-sm"
                     onClick={handleAddVariante}
-                    title="Agregar Variante a la lista"
+                    title="Agregar"
                   >
                     <i className="bx bx-plus"></i>
                   </button>
@@ -301,22 +293,25 @@ const ProductsManager = ({ productos = [], categorias = [], onRefresh }) => {
 
                 <div className="d-flex flex-column gap-2 mt-2">
                   {variantesList.map((v, i) => (
+                    // Item de lista: bg-body-tertiary para diferenciarse del fondo bg-body
                     <div
                       key={i}
-                      className="d-flex align-items-center justify-content-between bg-white p-2 rounded border shadow-sm"
+                      className="d-flex align-items-center justify-content-between bg-body-tertiary p-2 rounded border border-secondary-subtle"
                     >
                       <div className="d-flex align-items-center gap-2">
                         <img
                           src={v.url}
                           alt={v.color}
-                          className="rounded border"
+                          className="rounded border border-secondary"
                           style={{
                             width: "30px",
                             height: "30px",
                             objectFit: "cover",
                           }}
                         />
-                        <span className="small fw-bold">{v.color}</span>
+                        <span className="small fw-bold text-body">
+                          {v.color}
+                        </span>
                       </div>
                       <button
                         type="button"
@@ -328,12 +323,13 @@ const ProductsManager = ({ productos = [], categorias = [], onRefresh }) => {
                     </div>
                   ))}
                   {variantesList.length === 0 && (
-                    <small className="text-muted text-center fst-italic py-1">
+                    <small className="text-body-secondary text-center fst-italic py-1">
                       Sin variantes agregadas.
                     </small>
                   )}
                 </div>
               </div>
+              {/* ========================================== */}
 
               <div className="d-flex gap-2">
                 <button
@@ -366,7 +362,7 @@ const ProductsManager = ({ productos = [], categorias = [], onRefresh }) => {
 
       {/* LISTA */}
       <div className="col-lg-7">
-        <div className="card border-0 shadow-sm rounded-4 h-100">
+        <div className="card border-0 shadow-sm rounded-4 h-100 bg-body-tertiary">
           <div className="card-header bg-transparent border-0 pt-4 px-4">
             <h5 className="fw-bold text-primary mb-0">Inventario</h5>
           </div>
@@ -382,26 +378,33 @@ const ProductsManager = ({ productos = [], categorias = [], onRefresh }) => {
               </thead>
               <tbody>
                 {productos.map((prod) => (
-                  <tr key={prod.id}>
+                  // Fila de tabla: Se adapta sola gracias a las clases de bootstrap-table,
+                  // pero nos aseguramos que las celdas tengan texto correcto
+                  <tr
+                    key={prod.id}
+                    className="border-bottom border-secondary-subtle"
+                  >
                     <td className="ps-4">
                       <div className="d-flex align-items-center">
                         <img
                           src={prod.imagen || "https://via.placeholder.com/40"}
                           alt={prod.nombre}
-                          className="rounded border me-3"
+                          className="rounded border border-secondary-subtle me-3"
                           style={{
                             width: "40px",
                             height: "40px",
                             objectFit: "cover",
                           }}
                         />
-                        <span className="fw-bold small">{prod.nombre}</span>
+                        <span className="fw-bold small text-body">
+                          {prod.nombre}
+                        </span>
                       </div>
                     </td>
                     <td className="fw-bold text-success">
                       ${prod.precio?.toLocaleString()}
                     </td>
-                    <td>{prod.stock}</td>
+                    <td className="text-body">{prod.stock}</td>
                     <td>
                       <button
                         className="btn btn-sm btn-outline-primary me-1 border-0"
